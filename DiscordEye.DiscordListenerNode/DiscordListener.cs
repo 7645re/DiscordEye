@@ -29,10 +29,11 @@ public class DiscordListener
         
         _client.Ready += async () =>
         {
-            foreach (var guildId in _client.Guilds.Select(x => x.Id))
+            foreach (var guild in _client.Guilds)
             {
-                await _client.SubscribeToGuildEvents(guildId);
-                _logger.LogInformation($"{_client.CurrentUser.Id} subscribed to guild {guildId}");
+                await _client.SubscribeToGuildEvents(guild.Id);
+                _logger.LogInformation($"{_client.CurrentUser.Id}:{_client.CurrentUser.Username}" +
+                                       $" subscribed to {guild.Name}");
             }
         };
 

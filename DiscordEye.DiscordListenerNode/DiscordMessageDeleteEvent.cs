@@ -9,5 +9,5 @@ public class DiscordMessageDeleteEvent
     public string Content { get; init; }
     public DateTimeOffset DeletedAt { get; init; }
     
-    public override string ToString() => $"GuildId: {GuildId}, ChannelId: {ChannelId}, UserId: {UserId}, MessageId: {MessageId}, Content: {Content}, DeletedAt: {DeletedAt}";
+    public override string ToString() => $"GuildId: {GuildId}\nChannelId: {ChannelId}\nUserId: {UserId}\nMessageId: {MessageId}\nContent: {Content}\nDeletedAt: {DeletedAt}";
 }
