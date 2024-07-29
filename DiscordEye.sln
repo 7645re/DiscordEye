@@ -2,8 +2,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordEye.DiscordListenerNode", "DiscordEye.DiscordListenerNode\DiscordEye.DiscordListenerNode.csproj", "{712E60EE-4944-40EB-A02F-2D32F5AEB5D3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordEye.Shared", "DiscordEye.Shared\DiscordEye.Shared.csproj", "{A074AD98-EC24-4E3A-9322-62C405DBD699}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,9 +12,5 @@ Global
 		{712E60EE-4944-40EB-A02F-2D32F5AEB5D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{712E60EE-4944-40EB-A02F-2D32F5AEB5D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{712E60EE-4944-40EB-A02F-2D32F5AEB5D3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A074AD98-EC24-4E3A-9322-62C405DBD699}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A074AD98-EC24-4E3A-9322-62C405DBD699}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A074AD98-EC24-4E3A-9322-62C405DBD699}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A074AD98-EC24-4E3A-9322-62C405DBD699}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

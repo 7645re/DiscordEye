@@ -2,24 +2,56 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Discord.Net-Anarchy" Version="1.8.0" />
+<!--      <PackageReference Include="Discord.Net-Anarchy" Version="1.8.0" />-->
       <PackageReference Include="MassTransit" Version="8.2.3" />
       <PackageReference Include="MassTransit.Kafka" Version="8.2.3" />
-      <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="6.0.0" />
-      <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.0" />    
+      <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />    
     </ItemGroup>
 
     <ItemGroup>
       <None Update="appsettings.Development.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Discord.Net.Commands\Discord.Net.Commands.csproj" />
+      <ProjectReference Include="..\Discord.Net.Interactions\Discord.Net.Interactions.csproj" />
+      <ProjectReference Include="..\Discord.Net.Rest\Discord.Net.Rest.csproj" />
+      <ProjectReference Include="..\Discord.Net.Webhook\Discord.Net.Webhook.csproj" />
+      <ProjectReference Include="..\Discord.Net.WebSocket\Discord.Net.WebSocket.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="Discord.Net-Anarchy">
+        <HintPath>..\..\discord-net-anarchy\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net-Anarchy.dll</HintPath>
+      </Reference>
+      <Reference Include="Discord.Net.Commands">
+        <HintPath>..\..\discord-net-anarchy\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.Commands.dll</HintPath>
+      </Reference>
+      <Reference Include="Discord.Net.Core">
+        <HintPath>..\..\discord-net-anarchy\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.Core.dll</HintPath>
+      </Reference>
+      <Reference Include="Discord.Net.Interactions">
+        <HintPath>..\..\discord-net-anarchy\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.Interactions.dll</HintPath>
+      </Reference>
+      <Reference Include="Discord.Net.Rest">
+        <HintPath>..\..\discord-net-anarchy\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.Rest.dll</HintPath>
+      </Reference>
+      <Reference Include="Discord.Net.Webhook">
+        <HintPath>..\..\discord-net-anarchy\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.Webhook.dll</HintPath>
+      </Reference>
+      <Reference Include="Discord.Net.WebSocket">
+        <HintPath>..\..\discord-net-anarchy\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.WebSocket.dll</HintPath>
+      </Reference>
     </ItemGroup>
 
 </Project>

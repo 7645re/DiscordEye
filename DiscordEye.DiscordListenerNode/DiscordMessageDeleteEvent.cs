@@ -1,3 +1,5 @@
+using System;
+
 namespace DiscordEye.DiscordListenerNode;
 
 public class DiscordMessageDeleteEvent
