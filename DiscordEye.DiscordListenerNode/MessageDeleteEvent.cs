@@ -1,8 +1,6 @@
-using System;
-
 namespace DiscordEye.DiscordListenerNode;
 
-public class DiscordMessageDeleteEvent
+public class MessageDeleteEvent
 {
     public ulong GuildId { get; init; }
     public ulong ChannelId { get; init; }

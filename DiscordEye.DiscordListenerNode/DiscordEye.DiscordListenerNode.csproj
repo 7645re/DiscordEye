@@ -14,20 +14,13 @@
       <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
       <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
       <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />    
+      <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />    
     </ItemGroup>
 
     <ItemGroup>
       <None Update="appsettings.Development.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\Discord.Net.Commands\Discord.Net.Commands.csproj" />
-      <ProjectReference Include="..\Discord.Net.Interactions\Discord.Net.Interactions.csproj" />
-      <ProjectReference Include="..\Discord.Net.Rest\Discord.Net.Rest.csproj" />
-      <ProjectReference Include="..\Discord.Net.Webhook\Discord.Net.Webhook.csproj" />
-      <ProjectReference Include="..\Discord.Net.WebSocket\Discord.Net.WebSocket.csproj" />
     </ItemGroup>
 
     <ItemGroup>

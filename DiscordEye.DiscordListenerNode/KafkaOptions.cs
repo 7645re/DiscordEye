@@ -6,7 +6,9 @@ public class KafkaOptions
     
     public int Port { get; set; }
     
-    public string DiscordMessageDeleteTopic { get; set; }
+    public string MessageDeleteTopic { get; set; }
+
+    public string StreamPreviewTopic { get; set; }
     
     public string GetHost() => $"{Address}:{Port}";
 }

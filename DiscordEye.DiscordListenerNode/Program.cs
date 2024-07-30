@@ -29,7 +29,8 @@ services.AddMassTransit(x =>
     
     x.AddRider(r =>
     {
-        r.AddProducer<Guid, DiscordMessageDeleteEvent>(kafkaOptions.DiscordMessageDeleteTopic);
+        r.AddProducer<Guid, MessageDeleteEvent>(kafkaOptions.MessageDeleteTopic);
+        r.AddProducer<Guid, StreamPreviewEvent>(kafkaOptions.StreamPreviewTopic);
                     
         r.UsingKafka((context, cfg) =>
         {
@@ -45,7 +46,6 @@ var busControl = serviceProvider.GetRequiredService<IBusControl>();
 await busControl.StartAsync();
 
 var discordListener = serviceProvider.GetRequiredService<DiscordListener>();
-
 await discordListener.StartAsync();
 
 await Task.Delay(Timeout.Infinite);

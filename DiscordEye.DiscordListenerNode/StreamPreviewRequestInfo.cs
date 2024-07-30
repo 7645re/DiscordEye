@@ -7,4 +7,6 @@ public class StreamPreviewRequestInfo
     public ulong ChannelId { get; set; }
 
     public ulong UserId { get; set; }
+    
+    public DateTimeOffset StartedAt { get; set; }
 }
