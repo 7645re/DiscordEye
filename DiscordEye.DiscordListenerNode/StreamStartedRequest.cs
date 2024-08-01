@@ -1,12 +1,9 @@
 namespace DiscordEye.DiscordListenerNode;
 
-public class StreamPreviewRequestInfo
+public class StreamStartedRequest
 {
     public ulong GuildId { get; set; }
-
     public ulong ChannelId { get; set; }
-
     public ulong UserId { get; set; }
-    
-    public DateTimeOffset StartedAt { get; set; }
+    public DateTimeOffset Timestamp { get; set; }
 }

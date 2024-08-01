@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
+using DiscordEye.DiscordListenerNode.Events;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -13,20 +14,23 @@ public class DiscordListener
     private readonly DiscordSocketClient _client;
     private readonly StartupOptions _options;
     private readonly ILogger<DiscordListener> _logger;
-    private readonly ITopicProducer<Guid, MessageDeleteEvent> _messageDeleteTopicProducer;
-    private readonly ITopicProducer<Guid, StreamPreviewEvent> _streamPreviewTopicProducer;
-    private readonly ConcurrentQueue<StreamPreviewRequestInfo> _streamPreviewRequestInfos;
+    private readonly ITopicProducer<Guid, MessageDeletedEvent> _messageDeletedEvent;
+    private readonly ITopicProducer<Guid, StreamStartedEvent> _streamStartedEvent;
+    private readonly ITopicProducer<Guid, StreamStoppedEvent> _streamStoppedEvent;
+    private readonly ConcurrentQueue<StreamStartedRequest> _streamStartedRequest;
 
     public DiscordListener(
         IOptions<StartupOptions> options,
         ILogger<DiscordListener> logger,
-        ITopicProducer<Guid, MessageDeleteEvent> messageDeleteTopicProducer,
-        ITopicProducer<Guid, StreamPreviewEvent> streamPreviewTopicProducer)
+        ITopicProducer<Guid, MessageDeletedEvent> messageDeletedEvent,
+        ITopicProducer<Guid, StreamStartedEvent> streamStartedEvent,
+        ITopicProducer<Guid, StreamStoppedEvent> streamStoppedEvent)
     {
-        _streamPreviewRequestInfos = new ConcurrentQueue<StreamPreviewRequestInfo>();
+        _streamStartedRequest = new ConcurrentQueue<StreamStartedRequest>();
         _logger = logger;
-        _messageDeleteTopicProducer = messageDeleteTopicProducer;
-        _streamPreviewTopicProducer = streamPreviewTopicProducer;
+        _messageDeletedEvent = messageDeletedEvent;
+        _streamStartedEvent = streamStartedEvent;
+        _streamStoppedEvent = streamStoppedEvent;
         _options = options.Value;
         _client = new DiscordSocketClient(new DiscordSocketConfig
         {
@@ -115,17 +119,27 @@ public class DiscordListener
             
             if (voiceStateBefore.IsStreaming && !voiceStateAfter.IsStreaming)
             {
-                _logger.LogInformation($"{user.Username} turned off stream in {voiceStateBefore.VoiceChannel.Name}");
-                // turn off stream
+                var eventMessage = new StreamEvent
+                {
+                    GuildId = voiceStateBefore.VoiceChannel.Guild.Id,
+                    ChannelId = voiceStateBefore.VoiceChannel.Id,
+                    UserId = user.Id,
+                    Timestamp = DateTimeOffset.Now
+                };
+                _logger.LogInformation(eventMessage.ToString());
+                
+                await _streamStoppedEvent.Produce(
+                    Guid.NewGuid(),
+                    eventMessage);
             }
             if (!voiceStateBefore.IsStreaming && voiceStateAfter.IsStreaming)
             {
-                _streamPreviewRequestInfos.Enqueue(
-                    new StreamPreviewRequestInfo
+                _streamStartedRequest.Enqueue(
+                    new StreamStartedRequest
                     {
                         GuildId = voiceStateAfter.VoiceChannel.Guild.Id,
                         ChannelId = voiceStateAfter.VoiceChannel.Id,
-                        StartedAt = DateTimeOffset.Now,
+                        Timestamp = DateTimeOffset.Now,
                         UserId = user.Id
                     });
             }
@@ -136,20 +150,19 @@ public class DiscordListener
             if (!cacheableMessage.HasValue) return;
             if (cacheableMessageChannel.Value is not SocketTextChannel channel) return;
             
-            var eventMessage = new MessageDeleteEvent
+            var eventMessage = new MessageDeletedEvent
             {
                 GuildId = channel.Guild.Id,
                 ChannelId = channel.Id,
                 UserId = cacheableMessage.Value.Author.Id,
                 MessageId = cacheableMessage.Value.Id,
                 Content = cacheableMessage.Value.Content,
-                DeletedAt = cacheableMessage.Value.Timestamp
+                Timestamp = cacheableMessage.Value.Timestamp
             };
-            
             _logger.LogInformation(eventMessage.ToString());
 
             if (_options.SendEvent)
-                await _messageDeleteTopicProducer.Produce(Guid.NewGuid(), eventMessage);
+                await _messageDeletedEvent.Produce(Guid.NewGuid(), eventMessage);
         };
     }
 
@@ -164,7 +177,7 @@ public class DiscordListener
         
         while (true)
         {
-            if (!_streamPreviewRequestInfos.TryDequeue(out var requestInfo))
+            if (!_streamStartedRequest.TryDequeue(out var requestInfo))
             {
                 await Task.Delay(7000);
                 continue;
@@ -191,23 +204,23 @@ public class DiscordListener
 
             if (string.IsNullOrEmpty(streamPreview))
             {
-                _streamPreviewRequestInfos.Enqueue(requestInfo);
+                _streamStartedRequest.Enqueue(requestInfo);
                 await Task.Delay(7000);
                 continue;
             }
 
-            var streamPreviewEvent = new StreamPreviewEvent
+            var eventMessage = new StreamEvent()
             {
                 GuildId = requestInfo.GuildId,
                 ChannelId = requestInfo.ChannelId,
                 UserId = requestInfo.UserId,
                 Url = streamPreview,
-                StartedAt = requestInfo.StartedAt
+                Timestamp = requestInfo.Timestamp
             };
-            _logger.LogInformation(streamPreviewEvent.ToString());
+            _logger.LogInformation(eventMessage.ToString());
 
             if (_options.SendEvent)
-                await _streamPreviewTopicProducer.Produce(Guid.NewGuid(), streamPreviewEvent);
+                await _streamStartedEvent.Produce(Guid.NewGuid(), eventMessage);
             
             await Task.Delay(7000);
         }

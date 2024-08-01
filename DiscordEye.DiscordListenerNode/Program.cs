@@ -1,4 +1,5 @@
 ﻿using DiscordEye.DiscordListenerNode;
+using DiscordEye.DiscordListenerNode.Events;
 using MassTransit;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,8 +30,9 @@ services.AddMassTransit(x =>
     
     x.AddRider(r =>
     {
-        r.AddProducer<Guid, MessageDeleteEvent>(kafkaOptions.MessageDeleteTopic);
-        r.AddProducer<Guid, StreamPreviewEvent>(kafkaOptions.StreamPreviewTopic);
+        r.AddProducer<Guid, MessageDeletedEvent>(kafkaOptions.MessageDeletedTopic);
+        r.AddProducer<Guid, StreamStartedEvent>(kafkaOptions.StreamStartedTopic);
+        r.AddProducer<Guid, StreamStoppedEvent>(kafkaOptions.StreamStoppedTopic);
                     
         r.UsingKafka((context, cfg) =>
         {
