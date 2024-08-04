@@ -47,4 +47,8 @@
       </Reference>
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\DiscordEye.Shared\DiscordEye.Shared.csproj" />
+    </ItemGroup>
+
 </Project>

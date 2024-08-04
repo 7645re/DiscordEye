@@ -2,6 +2,10 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordEye.DiscordListenerNode", "DiscordEye.DiscordListenerNode\DiscordEye.DiscordListenerNode.csproj", "{712E60EE-4944-40EB-A02F-2D32F5AEB5D3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordEye.EventsAggregator", "DiscordEye.EventsAggregator\DiscordEye.EventsAggregator.csproj", "{AABB648A-1E9B-494E-A6F4-5F96AC90593E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordEye.Shared", "DiscordEye.Shared\DiscordEye.Shared.csproj", "{1CDDCBC5-7654-407F-A6F2-1929B120B1EC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +16,13 @@ Global
 		{712E60EE-4944-40EB-A02F-2D32F5AEB5D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{712E60EE-4944-40EB-A02F-2D32F5AEB5D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{712E60EE-4944-40EB-A02F-2D32F5AEB5D3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AABB648A-1E9B-494E-A6F4-5F96AC90593E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AABB648A-1E9B-494E-A6F4-5F96AC90593E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AABB648A-1E9B-494E-A6F4-5F96AC90593E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AABB648A-1E9B-494E-A6F4-5F96AC90593E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1CDDCBC5-7654-407F-A6F2-1929B120B1EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1CDDCBC5-7654-407F-A6F2-1929B120B1EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1CDDCBC5-7654-407F-A6F2-1929B120B1EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1CDDCBC5-7654-407F-A6F2-1929B120B1EC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

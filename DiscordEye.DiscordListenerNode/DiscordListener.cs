@@ -1,8 +1,9 @@
-using System.Collections.Concurrent;
+using System.Text.Json;
+using System.Threading.Channels;
 using Discord;
 using Discord.Rest;
 using Discord.WebSocket;
-using DiscordEye.DiscordListenerNode.Events;
+using DiscordEye.Shared.Events;
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -14,23 +15,17 @@ public class DiscordListener
     private readonly DiscordSocketClient _client;
     private readonly StartupOptions _options;
     private readonly ILogger<DiscordListener> _logger;
-    private readonly ITopicProducer<Guid, MessageDeletedEvent> _messageDeletedEvent;
-    private readonly ITopicProducer<Guid, StreamStartedEvent> _streamStartedEvent;
-    private readonly ITopicProducer<Guid, StreamStoppedEvent> _streamStoppedEvent;
-    private readonly ConcurrentQueue<StreamStartedRequest> _streamStartedRequest;
+    private readonly ITopicProducer<Guid, DiscordEvent> _discordTopic;
+    private readonly Channel<StreamStartedRequest> _streamStartedRequestChannel;
 
     public DiscordListener(
         IOptions<StartupOptions> options,
         ILogger<DiscordListener> logger,
-        ITopicProducer<Guid, MessageDeletedEvent> messageDeletedEvent,
-        ITopicProducer<Guid, StreamStartedEvent> streamStartedEvent,
-        ITopicProducer<Guid, StreamStoppedEvent> streamStoppedEvent)
+        ITopicProducer<Guid, DiscordEvent> discordTopic)
     {
-        _streamStartedRequest = new ConcurrentQueue<StreamStartedRequest>();
+        _streamStartedRequestChannel = Channel.CreateUnbounded<StreamStartedRequest>();
         _logger = logger;
-        _messageDeletedEvent = messageDeletedEvent;
-        _streamStartedEvent = streamStartedEvent;
-        _streamStoppedEvent = streamStoppedEvent;
+        _discordTopic = discordTopic;
         _options = options.Value;
         _client = new DiscordSocketClient(new DiscordSocketConfig
         {
@@ -52,7 +47,19 @@ public class DiscordListener
         {
             if (userBefore.GetAvatarUrl() != userAfter.GetAvatarUrl())
             {
-                // user changed avatar
+                var eventMessage = new DiscordEvent
+                {
+                    EventType = DiscordEventType.UserChangedAvatar,
+                    ContentJson = JsonSerializer.Serialize(new UserChangedAvatarEvent
+                    {
+                        UserId = userBefore.Id,
+                        OldAvatarUrl = userBefore.GetAvatarUrl(),
+                        NewAvatarUrl = userAfter.GetAvatarUrl(),
+                        Timestamp = DateTimeOffset.Now
+                    })
+                };
+
+                await _discordTopic.Produce(Guid.NewGuid(), eventMessage);
             }
         };
         
@@ -62,79 +69,46 @@ public class DiscordListener
 
             if (before.Username != user.Username)
             {
-                // user changed nickname
+                var eventMessage = new DiscordEvent
+                {
+                    EventType = DiscordEventType.UserGuildChangedNickname,
+                    ContentJson = JsonSerializer.Serialize(new UserGuildChangedNicknameEvent
+                    {
+                        GuildId = before.Guild.Id,
+                        UserId = user.Id,
+                        OldUsername = before.Username,
+                        NewUsername = user.Username,
+                        Timestamp = DateTimeOffset.Now
+                    })
+                };
+
+                await _discordTopic.Produce(Guid.NewGuid(), eventMessage);
             }
         };
         
         _client.UserBanned += async (user, guild) =>
         {
-            // user banned
+            var eventMessage = new DiscordEvent
+            {
+                EventType = DiscordEventType.Banned,
+                ContentJson = JsonSerializer.Serialize(new UserBannedEvent
+                {
+                    GuildId = guild.Id,
+                    UserId = user.Id,
+                    Timestamp = DateTimeOffset.Now
+                })
+            };
+
+            await _discordTopic.Produce(Guid.NewGuid(), eventMessage);
         };
         
         _client.UserVoiceStateUpdated += async (user, voiceStateBefore, voiceStateAfter) =>
         {
-            if (voiceStateBefore.VoiceChannel == null && voiceStateAfter.VoiceChannel != null)
+            var eventType = DiscordHelper.DetermineEventType(voiceStateBefore, voiceStateAfter);
+
+            if (eventType is DiscordEventType.StreamStarted)
             {
-                _logger.LogInformation($"{user.Username} joined {voiceStateAfter.VoiceChannel.Name}");
-                // user joined to channel
-            }
-            if (voiceStateBefore.VoiceChannel != null && voiceStateAfter.VoiceChannel == null)
-            {
-                _logger.LogInformation($"{user.Username} left {voiceStateBefore.VoiceChannel.Name}");
-                // user left from channel                
-            }
-            
-            if (voiceStateBefore.IsSelfDeafened && !voiceStateAfter.IsSelfDeafened)
-            {
-                _logger.LogInformation($"{user.Username} turned on headphones in {voiceStateBefore.VoiceChannel.Name}");
-                // turn on headphones
-            }
-            if (!voiceStateBefore.IsSelfDeafened && voiceStateAfter.IsSelfDeafened)
-            {
-                _logger.LogInformation($"{user.Username} turned off headphones in {voiceStateBefore.VoiceChannel.Name}");
-                // turn off headphones
-            }
-            
-            if (voiceStateBefore.IsSelfMuted && !voiceStateAfter.IsSelfMuted)
-            {
-                _logger.LogInformation($"{user.Username} turned on mic in {voiceStateBefore.VoiceChannel.Name}");
-                // turn on mic
-            }
-            if (!voiceStateBefore.IsSelfMuted && voiceStateAfter.IsSelfMuted)
-            {
-                _logger.LogInformation($"{user.Username} turned off mic in {voiceStateBefore.VoiceChannel.Name}");
-                // turn off mic
-            }
-            
-            if (!voiceStateBefore.IsVideoing && voiceStateAfter.IsVideoing)
-            {
-                _logger.LogInformation($"{user.Username} turned on webcamera in {voiceStateBefore.VoiceChannel.Name}");
-                // turn on webcamera
-            }
-            if (voiceStateBefore.IsVideoing && !voiceStateAfter.IsVideoing)
-            {
-                _logger.LogInformation($"{user.Username} turned off webcamera in {voiceStateBefore.VoiceChannel.Name}");
-                // turn off webcamera
-            }
-            
-            if (voiceStateBefore.IsStreaming && !voiceStateAfter.IsStreaming)
-            {
-                var eventMessage = new StreamEvent
-                {
-                    GuildId = voiceStateBefore.VoiceChannel.Guild.Id,
-                    ChannelId = voiceStateBefore.VoiceChannel.Id,
-                    UserId = user.Id,
-                    Timestamp = DateTimeOffset.Now
-                };
-                _logger.LogInformation(eventMessage.ToString());
-                
-                await _streamStoppedEvent.Produce(
-                    Guid.NewGuid(),
-                    eventMessage);
-            }
-            if (!voiceStateBefore.IsStreaming && voiceStateAfter.IsStreaming)
-            {
-                _streamStartedRequest.Enqueue(
+                await _streamStartedRequestChannel.Writer.WriteAsync(
                     new StreamStartedRequest
                     {
                         GuildId = voiceStateAfter.VoiceChannel.Guild.Id,
@@ -142,30 +116,78 @@ public class DiscordListener
                         Timestamp = DateTimeOffset.Now,
                         UserId = user.Id
                     });
+                return;
             }
+
+            var eventMessage = new DiscordEvent
+            {
+                EventType = eventType,
+                ContentJson = JsonSerializer.Serialize(new UserVoiceChannelActionEvent
+                {
+                    GuildId = voiceStateAfter.VoiceChannel.Guild.Id,
+                    ChannelId = voiceStateAfter.VoiceChannel.Id,
+                    UserId = user.Id,
+                    Timestamp = DateTimeOffset.Now
+                })
+            };
+            await _discordTopic.Produce(Guid.NewGuid(), eventMessage);
         };
 
         _client.MessageDeleted += async (cacheableMessage, cacheableMessageChannel) =>
         {
             if (!cacheableMessage.HasValue) return;
             if (cacheableMessageChannel.Value is not SocketTextChannel channel) return;
-            
-            var eventMessage = new MessageDeletedEvent
-            {
-                GuildId = channel.Guild.Id,
-                ChannelId = channel.Id,
-                UserId = cacheableMessage.Value.Author.Id,
-                MessageId = cacheableMessage.Value.Id,
-                Content = cacheableMessage.Value.Content,
-                Timestamp = cacheableMessage.Value.Timestamp
-            };
-            _logger.LogInformation(eventMessage.ToString());
 
-            if (_options.SendEvent)
-                await _messageDeletedEvent.Produce(Guid.NewGuid(), eventMessage);
+            var eventMessage = new DiscordEvent
+            {
+                EventType = DiscordEventType.MessageDeleted,
+                ContentJson = JsonSerializer.Serialize(new MessageDeletedEvent
+                {
+                    GuildId = channel.Guild.Id,
+                    ChannelId = channel.Id,
+                    UserId = cacheableMessage.Value.Author.Id,
+                    Content = cacheableMessage.Value.Content,
+                    Timestamp = cacheableMessage.Value.Timestamp,
+                    MessageId = cacheableMessage.Value.Id,
+                })
+            };
+
+            await _discordTopic.Produce(Guid.NewGuid(), eventMessage);
+        };
+
+        _client.MessageUpdated += async (cacheableMessage, messageBefore, cacheableMessageChannel) =>
+        {
+            if (cacheableMessageChannel is not SocketTextChannel channel) return;
+            if (cacheableMessage.Value.Content is ""
+                || messageBefore.Content is "")
+            {
+                return;
+            }
+
+            if (cacheableMessage.Value.Content == messageBefore.Content)
+            {
+                return;
+            }
+
+            var eventMessage = new DiscordEvent
+            {
+                EventType = DiscordEventType.MessageChanged,
+                ContentJson = JsonSerializer.Serialize(new MessageUpdatedEvent
+                {
+                    GuildId = channel.Guild.Id,
+                    ChannelId = channel.Id,
+                    UserId = cacheableMessage.Value.Author.Id,
+                    MessageId = cacheableMessage.Value.Id,
+                    OldContent = messageBefore.Content,
+                    NewContent = cacheableMessage.Value.Content,
+                    Timestamp = DateTimeOffset.Now
+                })
+            };
+
+            await _discordTopic.Produce(Guid.NewGuid(), eventMessage);
         };
     }
-
+    
     private async Task PollingStreamPreviewAsync()
     {
         if (_client.Rest is not DiscordRestClient restClient)
@@ -174,53 +196,47 @@ public class DiscordListener
                                 $" {nameof(DiscordRestClient)} cannot cast to DiscordRestClient");
             return;
         }
-        
-        while (true)
-        {
-            if (!_streamStartedRequest.TryDequeue(out var requestInfo))
-            {
-                await Task.Delay(7000);
-                continue;
-            }
 
-            var channel = await _client.GetChannelAsync(requestInfo.ChannelId);
-            var user = await channel.GetUserAsync(requestInfo.UserId);
+        await foreach (var request in _streamStartedRequestChannel.Reader.ReadAllAsync())
+        {
+            var channel = await _client.GetChannelAsync(request.ChannelId);
+            var user = await channel.GetUserAsync(request.UserId);
             if (user is SocketGuildUser { IsStreaming: false })
                 continue;
 
-            var streamPreview = string.Empty;
+            string? streamPreview = null;
             try
             {
                 streamPreview = await restClient.GetUserStreamPreviewAsync(
-                    requestInfo.GuildId,
-                    requestInfo.ChannelId,
-                    requestInfo.UserId);
+                    request.GuildId,
+                    request.ChannelId,
+                    request.UserId);
             }
-            catch (Discord.Net.HttpException e)
+            catch (Discord.Net.HttpException)
             {
-                await Task.Delay(7000);
             }
 
 
             if (string.IsNullOrEmpty(streamPreview))
             {
-                _streamStartedRequest.Enqueue(requestInfo);
+                await _streamStartedRequestChannel.Writer.WriteAsync(request);
                 await Task.Delay(7000);
                 continue;
             }
 
-            var eventMessage = new StreamEvent()
+            var eventMessage = new DiscordEvent
             {
-                GuildId = requestInfo.GuildId,
-                ChannelId = requestInfo.ChannelId,
-                UserId = requestInfo.UserId,
-                Url = streamPreview,
-                Timestamp = requestInfo.Timestamp
+                EventType = DiscordEventType.StreamStarted,
+                ContentJson = JsonSerializer.Serialize(new UserVoiceChannelActionEvent
+                {
+                    GuildId = request.GuildId,
+                    ChannelId = request.ChannelId,
+                    UserId = request.UserId,
+                    Timestamp = request.Timestamp,
+                    Attachment = streamPreview
+                })
             };
-            _logger.LogInformation(eventMessage.ToString());
-
-            if (_options.SendEvent)
-                await _streamStartedEvent.Produce(Guid.NewGuid(), eventMessage);
+            await _discordTopic.Produce(Guid.NewGuid(), eventMessage);
             
             await Task.Delay(7000);
         }
