@@ -1,10 +1,7 @@
 namespace DiscordEye.Shared.Events;
 
-public enum DiscordEventType
+public enum UserVoiceChannelActionType
 {
-    MessageWritten,
-    MessageDeleted,
-    MessageChanged,
     StreamStarted,
     StreamStopped,
     JoinedVoiceChannel,
@@ -14,8 +11,5 @@ public enum DiscordEventType
     Deafened,
     Undeafened,
     VideoEnabled,
-    VideoDisabled,
-    Banned,
-    UserGuildChangedNickname,
-    UserChangedAvatar
+    VideoDisabled
 }

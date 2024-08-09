@@ -1,10 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordEye.DiscordListenerNode", "DiscordEye.DiscordListenerNode\DiscordEye.DiscordListenerNode.csproj", "{712E60EE-4944-40EB-A02F-2D32F5AEB5D3}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordEye.EventsAggregator", "DiscordEye.EventsAggregator\DiscordEye.EventsAggregator.csproj", "{AABB648A-1E9B-494E-A6F4-5F96AC90593E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordEye.Shared", "DiscordEye.Shared\DiscordEye.Shared.csproj", "{1CDDCBC5-7654-407F-A6F2-1929B120B1EC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordEye.DiscordListener", "DiscordEye.DiscordListener\DiscordEye.DiscordListener.csproj", "{9883443A-03B6-414D-99D8-91C7E33C810D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -12,10 +12,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{712E60EE-4944-40EB-A02F-2D32F5AEB5D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{712E60EE-4944-40EB-A02F-2D32F5AEB5D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{712E60EE-4944-40EB-A02F-2D32F5AEB5D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{712E60EE-4944-40EB-A02F-2D32F5AEB5D3}.Release|Any CPU.Build.0 = Release|Any CPU
 		{AABB648A-1E9B-494E-A6F4-5F96AC90593E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{AABB648A-1E9B-494E-A6F4-5F96AC90593E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AABB648A-1E9B-494E-A6F4-5F96AC90593E}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -24,5 +20,9 @@ Global
 		{1CDDCBC5-7654-407F-A6F2-1929B120B1EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1CDDCBC5-7654-407F-A6F2-1929B120B1EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1CDDCBC5-7654-407F-A6F2-1929B120B1EC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9883443A-03B6-414D-99D8-91C7E33C810D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9883443A-03B6-414D-99D8-91C7E33C810D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9883443A-03B6-414D-99D8-91C7E33C810D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9883443A-03B6-414D-99D8-91C7E33C810D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

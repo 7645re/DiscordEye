@@ -31,3 +31,15 @@ services:
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     networks:
       - DiscordEye
+  
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: NotWeakPassword123!
+      POSTGRES_DB: DiscordEye
+    ports:
+      - "5432:5432"
+    networks:
+      - DiscordEye

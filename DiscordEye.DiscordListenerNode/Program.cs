@@ -1,4 +1,5 @@
 ﻿using DiscordEye.DiscordListenerNode;
+using DiscordEye.Shared;
 using DiscordEye.Shared.Events;
 using MassTransit;
 using Microsoft.Extensions.Configuration;

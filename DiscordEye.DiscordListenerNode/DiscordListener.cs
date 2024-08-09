@@ -136,17 +136,12 @@ public class DiscordListener
         _client.MessageDeleted += async (cacheableMessage, cacheableMessageChannel) =>
         {
             if (!cacheableMessage.HasValue) return;
-            if (cacheableMessageChannel.Value is not SocketTextChannel channel) return;
 
             var eventMessage = new DiscordEvent
             {
                 EventType = DiscordEventType.MessageDeleted,
                 ContentJson = JsonSerializer.Serialize(new MessageDeletedEvent
                 {
-                    GuildId = channel.Guild.Id,
-                    ChannelId = channel.Id,
-                    UserId = cacheableMessage.Value.Author.Id,
-                    Content = cacheableMessage.Value.Content,
                     Timestamp = cacheableMessage.Value.Timestamp,
                     MessageId = cacheableMessage.Value.Id,
                 })
@@ -155,6 +150,28 @@ public class DiscordListener
             await _discordTopic.Produce(Guid.NewGuid(), eventMessage);
         };
 
+        _client.MessageReceived += async message =>
+        {
+            if (message.Channel is not SocketGuildChannel guildChannel)
+                return;
+
+            var eventMessage = new DiscordEvent
+            {
+                EventType = DiscordEventType.MessageReceived,
+                ContentJson = JsonSerializer.Serialize(new MessageReceivedEvent
+                {
+                    GuildId = guildChannel.Guild.Id,
+                    ChannelId = guildChannel.Id,
+                    UserId = message.Author.Id,
+                    MessageId = message.Id,
+                    Content = message.Content,
+                    Timestamp = message.CreatedAt
+                })
+            };
+
+            await _discordTopic.Produce(Guid.NewGuid(), eventMessage);
+        };
+        
         _client.MessageUpdated += async (cacheableMessage, messageBefore, cacheableMessageChannel) =>
         {
             if (cacheableMessageChannel is not SocketTextChannel channel) return;
@@ -171,14 +188,10 @@ public class DiscordListener
 
             var eventMessage = new DiscordEvent
             {
-                EventType = DiscordEventType.MessageChanged,
+                EventType = DiscordEventType.MessageUpdated,
                 ContentJson = JsonSerializer.Serialize(new MessageUpdatedEvent
                 {
-                    GuildId = channel.Guild.Id,
-                    ChannelId = channel.Id,
-                    UserId = cacheableMessage.Value.Author.Id,
                     MessageId = cacheableMessage.Value.Id,
-                    OldContent = messageBefore.Content,
                     NewContent = cacheableMessage.Value.Content,
                     Timestamp = DateTimeOffset.Now
                 })
@@ -240,6 +253,11 @@ public class DiscordListener
             
             await Task.Delay(7000);
         }
+    }
+
+    public async Task<IUser> GetUserAsync(ulong id)
+    {
+        return await _client.GetUserAsync(id);
     }
     
     public async Task StartAsync()
