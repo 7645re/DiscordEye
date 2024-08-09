@@ -24,18 +24,21 @@ public class EventService : IEventService
         await AddUserIfDoesntExist(
             messageReceivedEvent.UserId,
             cancellationToken);
-        await AddGuildIfDoesntExist(
-            messageReceivedEvent.GuildId,
-            cancellationToken);
+        await _applicationDbContext.SaveChangesAsync(cancellationToken);
+        
         await AddChannelIfDoesntExist(
+            messageReceivedEvent.GuildId,
             messageReceivedEvent.ChannelId,
             cancellationToken);
-
+        await _applicationDbContext.SaveChangesAsync(cancellationToken);
+        
         var message = new MessageEntity
         {
             Id = messageReceivedEvent.MessageId,
             GuildId = messageReceivedEvent.GuildId,
             ChannelId = messageReceivedEvent.ChannelId,
+            UserId = messageReceivedEvent.UserId,
+            Content = messageReceivedEvent.Content,
             IsDeleted = false
         };
         await _applicationDbContext.AddAsync(message, cancellationToken);
@@ -47,7 +50,7 @@ public class EventService : IEventService
         var userIsExist = await _applicationDbContext
             .Users
             .AnyAsync(x => x.Id == id, cancellationToken);
-        if (!userIsExist)
+        if (userIsExist)
             return;
         
         var user = await _discordApiClient.GetUserAsync(
@@ -70,26 +73,30 @@ public class EventService : IEventService
             .AddAsync(userEntity, cancellationToken);
     }
 
-    private async Task AddChannelIfDoesntExist(long id, CancellationToken cancellationToken)
+    private async Task AddChannelIfDoesntExist(
+        long guildId,
+        long channelId,
+        CancellationToken cancellationToken)
     {
         var channelIsExist = await _applicationDbContext
             .Channels
-            .AnyAsync(x => x.Id == id, cancellationToken);
+            .AnyAsync(x => x.Id == channelId, cancellationToken);
         
-        if (!channelIsExist)
+        if (channelIsExist)
             return;
 
         var channel = await _discordApiClient.GetChannelAsync(
             "http://localhost:5131",
-            id,
+            channelId,
             cancellationToken);
         if (channel is null)
-            throw new ArgumentException($"Cannot find channel with id {id}");
+            throw new ArgumentException($"Cannot find channel with id {channelId}");
 
         var channelEntity = new ChannelEntity
         {
             Id = channel.Id,
-            Name = channel.Name
+            Name = channel.Name,
+            GuildId = guildId
         };
         await _applicationDbContext
             .Channels
@@ -102,7 +109,7 @@ public class EventService : IEventService
             .Guilds
             .AnyAsync(x => x.Id == id, cancellationToken);
         
-        if (!guildIsExist)
+        if (guildIsExist)
             return;
 
         var guild = await _discordApiClient.GetGuildAsync(
@@ -115,7 +122,8 @@ public class EventService : IEventService
         var guildEntity = new GuildEntity
         {
             Id = guild.Id,
-            Name = guild.Name
+            Name = guild.Name,
+            IconUrl = guild.IconUrl
         };
         await _applicationDbContext
             .Guilds
