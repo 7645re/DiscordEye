@@ -1,8 +1,9 @@
 using System.Threading.Channels;
 using Discord;
-using Discord.API;
 using Discord.Rest;
 using Discord.WebSocket;
+using DiscordEye.DiscordListener.Dto;
+using DiscordEye.DiscordListener.Mappers;
 using DiscordEye.Shared.Events;
 using MassTransit;
 using Microsoft.Extensions.Options;
@@ -41,13 +42,14 @@ public class DiscordListenerBackgroundService : BackgroundService
             }
         };
 
+        // TODO: ссылка на старую аватарку уже недействительная 
         _client.UserUpdated += async (userBefore, userAfter) =>
         {
             if (userBefore.GetAvatarUrl() != userAfter.GetAvatarUrl())
             {
                 var eventMessage = new UserChangedAvatarEvent
                 {
-                    UserId = (long)userBefore.Id,
+                    UserId = userBefore.Id,
                     OldAvatarUrl = userBefore.GetAvatarUrl(),
                     NewAvatarUrl = userAfter.GetAvatarUrl(),
                     Timestamp = DateTimeOffset.Now
@@ -65,8 +67,8 @@ public class DiscordListenerBackgroundService : BackgroundService
             {
                 var eventMessage = new UserGuildChangedNicknameEvent
                 {
-                    GuildId = (long)before.Guild.Id,
-                    UserId = (long)user.Id,
+                    GuildId = before.Guild.Id,
+                    UserId = user.Id,
                     OldUsername = before.Nickname,
                     NewUsername = user.Nickname,
                     Timestamp = DateTimeOffset.Now
@@ -80,8 +82,8 @@ public class DiscordListenerBackgroundService : BackgroundService
         {
             var eventMessage = new UserBannedEvent
             {
-                GuildId = (long)guild.Id,
-                UserId = (long)user.Id,
+                GuildId = guild.Id,
+                UserId = user.Id,
                 Timestamp = DateTimeOffset.Now
             };
 
@@ -107,9 +109,9 @@ public class DiscordListenerBackgroundService : BackgroundService
 
             var eventMessage = new UserVoiceChannelActionEvent
             {
-                GuildId = (long)voiceStateAfter.VoiceChannel.Guild.Id,
-                ChannelId = (long)voiceStateAfter.VoiceChannel.Id,
-                UserId = (long)user.Id,
+                GuildId = voiceStateAfter.VoiceChannel.Guild.Id,
+                ChannelId = voiceStateAfter.VoiceChannel.Id,
+                UserId = user.Id,
                 Timestamp = DateTimeOffset.Now,
                 ActionType = eventType
             };
@@ -123,7 +125,7 @@ public class DiscordListenerBackgroundService : BackgroundService
             var eventMessage = new MessageDeletedEvent
             {
                 Timestamp = cacheableMessage.Value.Timestamp,
-                MessageId = (long)cacheableMessage.Value.Id,
+                MessageId = cacheableMessage.Value.Id,
             };
 
             await ProduceEventAsync(_serviceProvider, eventMessage);
@@ -136,10 +138,10 @@ public class DiscordListenerBackgroundService : BackgroundService
 
             var eventMessage = new MessageReceivedEvent
             {
-                GuildId = (long)guildChannel.Guild.Id,
-                ChannelId = (long)guildChannel.Id,
-                UserId = (long)message.Author.Id,
-                MessageId = (long)message.Id,
+                GuildId = guildChannel.Guild.Id,
+                ChannelId = guildChannel.Id,
+                UserId = message.Author.Id,
+                MessageId = message.Id,
                 Content = message.Content,
                 Timestamp = message.CreatedAt
             };
@@ -149,7 +151,6 @@ public class DiscordListenerBackgroundService : BackgroundService
         
         _client.MessageUpdated += async (cacheableMessage, messageBefore, cacheableMessageChannel) =>
         {
-            if (cacheableMessageChannel is not SocketTextChannel channel) return;
             if (cacheableMessage.Value.Content is ""
                 || messageBefore.Content is "")
             {
@@ -163,7 +164,7 @@ public class DiscordListenerBackgroundService : BackgroundService
 
             var eventMessage = new MessageUpdatedEvent
             {
-                MessageId = (long)cacheableMessage.Value.Id,
+                MessageId = cacheableMessage.Value.Id,
                 NewContent = cacheableMessage.Value.Content,
                 Timestamp = DateTimeOffset.Now
             };
@@ -174,6 +175,9 @@ public class DiscordListenerBackgroundService : BackgroundService
 
     private async Task ProduceEventAsync<T>(IServiceProvider serviceProvider, T eventMessage) where T : class
     {
+        if (!_options.SendEvents)
+            return;
+
         using var scope = serviceProvider.CreateScope();
         var topicProducer = scope.ServiceProvider.GetRequiredService<ITopicProducer<Guid, T>>();
         await topicProducer.Produce(Guid.NewGuid(), eventMessage);
@@ -215,9 +219,9 @@ public class DiscordListenerBackgroundService : BackgroundService
 
             var eventMessage = new UserVoiceChannelActionEvent
             {
-                GuildId = (long)request.GuildId,
-                ChannelId = (long)request.ChannelId,
-                UserId = (long)request.UserId,
+                GuildId = request.GuildId,
+                ChannelId = request.ChannelId,
+                UserId = request.UserId,
                 Timestamp = request.Timestamp,
                 Attachment = streamPreview,
                 ActionType = UserVoiceChannelActionType.StreamStarted
@@ -228,19 +232,31 @@ public class DiscordListenerBackgroundService : BackgroundService
         }
     }
 
-    public async Task<IChannel> GetChannelAsync(ulong id)
+    public async Task<DiscordUser> GetUserAsync(
+        ulong id,
+        bool withGuilds = false)
     {
-        return await _client.Rest.GetChannelAsync(id);
-    }
-    
-    public async Task<UserProfile> GetUserProfileAsync(ulong id)
-    {
-        return await _client.Rest.GetUserProfileAsync(id);
+        var userProfile = await _client.Rest.GetUserProfileAsync(id);
+        var userRestGuilds = new List<DiscordGuild>();
+        if (withGuilds)
+        {
+            userRestGuilds.AddRange(
+                userProfile
+                    .MutualGuilds
+                    .Select(mutualGuild => 
+                        GetGuild(mutualGuild.Id)));
+        }
+      
+        var user = userProfile.ToDiscordUser(userRestGuilds);
+        return user;
     }
 
-    public async Task<RestGuild> GetGuildAsync(ulong id)
+    public DiscordGuild GetGuild(
+        ulong id,
+        bool withChannels = false)
     {
-        return await _client.Rest.GetGuildAsync(id);
+        var guild = _client.GetGuild(id); 
+        return guild.ToDiscordGuild(withChannels);
     }
     
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

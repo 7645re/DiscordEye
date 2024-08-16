@@ -45,7 +45,7 @@ public class EventService : IEventService
         await _applicationDbContext.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task AddUserIfDoesntExist(long id, CancellationToken cancellationToken)
+    private async Task AddUserIfDoesntExist(ulong id, CancellationToken cancellationToken)
     {
         var userIsExist = await _applicationDbContext
             .Users
@@ -55,13 +55,12 @@ public class EventService : IEventService
         
         var user = await _discordApiClient.GetUserAsync(
             "http://localhost:5131",
-            id,
-            cancellationToken);
+            id, cancellationToken: cancellationToken);
         if (user is null)
             throw new ArgumentException($"Cannot find user with id {id}");
 
         foreach (var guildResponse in user.Guilds)
-            await AddGuildIfDoesntExist(guildResponse.Id, cancellationToken);
+            await AddGuildIfDoesntExist(ulong.Parse(guildResponse.Id), cancellationToken);
 
         var userEntity = new UserEntity
         {
@@ -74,8 +73,8 @@ public class EventService : IEventService
     }
 
     private async Task AddChannelIfDoesntExist(
-        long guildId,
-        long channelId,
+        ulong guildId,
+        ulong channelId,
         CancellationToken cancellationToken)
     {
         var channelIsExist = await _applicationDbContext
@@ -94,7 +93,7 @@ public class EventService : IEventService
 
         var channelEntity = new ChannelEntity
         {
-            Id = channel.Id,
+            Id = ulong.Parse(channel.Id),
             Name = channel.Name,
             GuildId = guildId
         };
@@ -103,7 +102,7 @@ public class EventService : IEventService
             .AddAsync(channelEntity, cancellationToken);
     }
 
-    private async Task AddGuildIfDoesntExist(long id, CancellationToken cancellationToken)
+    private async Task AddGuildIfDoesntExist(ulong id, CancellationToken cancellationToken)
     {
         var guildIsExist = await _applicationDbContext
             .Guilds
@@ -121,7 +120,7 @@ public class EventService : IEventService
         
         var guildEntity = new GuildEntity
         {
-            Id = guild.Id,
+            Id = ulong.Parse(guild.Id),
             Name = guild.Name,
             IconUrl = guild.IconUrl
         };

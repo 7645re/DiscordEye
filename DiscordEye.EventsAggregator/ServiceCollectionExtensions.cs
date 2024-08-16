@@ -2,6 +2,7 @@ using DiscordEye.EventsAggregator.Consumers;
 using DiscordEye.EventsAggregator.Entities;
 using DiscordEye.Shared;
 using DiscordEye.Shared.Events;
+using DiscordEye.Shared.Options;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 

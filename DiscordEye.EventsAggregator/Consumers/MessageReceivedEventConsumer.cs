@@ -23,6 +23,6 @@ public class MessageReceivedEventConsumer : IConsumer<MessageReceivedEvent>
 
     public async Task Consume(ConsumeContext<MessageReceivedEvent> context)
     {
-        await _eventService.AddReceivedMessageAsync(context.Message, context.CancellationToken);
+        // await _eventService.AddReceivedMessageAsync(context.Message, context.CancellationToken);
     }
 }

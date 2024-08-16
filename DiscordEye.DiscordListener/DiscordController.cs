@@ -1,4 +1,5 @@
-using DiscordEye.Shared.Response;
+using DiscordEye.DiscordListener.Mappers;
+using DiscordEye.Shared.DiscordListenerApi.Response;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DiscordEye.DiscordListener;
@@ -8,32 +9,22 @@ namespace DiscordEye.DiscordListener;
 public class DiscordController : ControllerBase
 {
     [HttpGet("users/{id:long}")]
-    public async Task<UserResponse> GetUser(long id)
+    public async Task<DiscordUserResponse> GetUser(ulong id, [FromQuery] bool guildInfo = false)
     {
         var backgroundService = HttpContext
             .RequestServices
             .GetHostedService<DiscordListenerBackgroundService>();
-        var userProfile = await backgroundService.GetUserProfileAsync((ulong)id);
+        var userProfile = await backgroundService.GetUserAsync(id, guildInfo);
         return userProfile.ToDiscordUserResponse();
     }
 
-    [HttpGet("channels/{id:long}")]
-    public async Task<ChannelResponse> GetChannel(long id)
-    {
-        var backgroundService = HttpContext
-            .RequestServices
-            .GetHostedService<DiscordListenerBackgroundService>();
-        var userProfile = await backgroundService.GetChannelAsync((ulong)id);
-        return userProfile.ToChannelResponse();
-    }
-    
     [HttpGet("guilds/{id:long}")]
-    public async Task<GuildResponse> GetGuild(long id)
+    public async Task<DiscordGuildResponse> GetGuild(long id, [FromQuery] bool withChannels)
     {
         var backgroundService = HttpContext
             .RequestServices
             .GetHostedService<DiscordListenerBackgroundService>();
-        var guild = await backgroundService.GetGuildAsync((ulong)id);
+        var guild = backgroundService.GetGuild((ulong)id, withChannels);
         return guild.ToGuildResponse();
     }
 }

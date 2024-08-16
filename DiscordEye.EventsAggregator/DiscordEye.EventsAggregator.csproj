@@ -22,8 +22,4 @@
       <ProjectReference Include="..\DiscordEye.Shared\DiscordEye.Shared.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Migrations\" />
-    </ItemGroup>
-
 </Project>

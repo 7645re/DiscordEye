@@ -1,4 +1,4 @@
-namespace DiscordEye.Shared;
+namespace DiscordEye.Shared.Options;
 
 public class KafkaOptions
 {

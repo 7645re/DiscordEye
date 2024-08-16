@@ -1,4 +1,4 @@
-using DiscordEye.Shared.Response;
+using DiscordEye.Shared.DiscordListenerApi.Response;
 
 namespace DiscordEye.EventsAggregator;
 
@@ -11,35 +11,47 @@ public class DiscordApiClient
         _httpClient = httpClient;
     }
 
-    public async Task<UserResponse?> GetUserAsync(
+    public async Task<DiscordUserResponse?> GetUserAsync(
         string host,
-        long userId,
-        CancellationToken cancellationToken)
+        ulong userId,
+        bool guildInfo = false,
+        CancellationToken cancellationToken = default)
     {
         return await _httpClient
-            .GetFromJsonAsync<UserResponse>(
-            $"{host}/discord/users/{userId}",
+            .GetFromJsonAsync<DiscordUserResponse>(
+            $"{host}/discord/users/{userId}?guildInfo={guildInfo}",
             cancellationToken);
     }
 
-    public async Task<ChannelResponse?> GetChannelAsync(
+    public async Task<DiscordChannelResponse?> GetChannelAsync(
         string host,
-        long channelId,
-        CancellationToken cancellationToken)
+        ulong channelId,
+        CancellationToken cancellationToken = default)
     {
         return await _httpClient
-            .GetFromJsonAsync<ChannelResponse>(
+            .GetFromJsonAsync<DiscordChannelResponse>(
                 $"{host}/discord/channels/{channelId}",
                 cancellationToken);
     }
-    
-    public async Task<GuildResponse?> GetGuildAsync(
+
+    public async Task<IEnumerable<DiscordChannelResponse>?> GetGuildChannelsAsync(
         string host,
         long guildId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _httpClient
+            .GetFromJsonAsync<IEnumerable<DiscordChannelResponse>>(
+                $"{host}/discord/guilds/{guildId}/channels",
+                cancellationToken);
+    }
+    
+    public async Task<DiscordGuildResponse?> GetGuildAsync(
+        string host,
+        ulong guildId,
         CancellationToken cancellationToken)
     {
         return await _httpClient
-            .GetFromJsonAsync<GuildResponse>(
+            .GetFromJsonAsync<DiscordGuildResponse>(
                 $"{host}/discord/guilds/{guildId}",
                 cancellationToken);
     }

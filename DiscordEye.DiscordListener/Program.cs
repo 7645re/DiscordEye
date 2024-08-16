@@ -1,6 +1,7 @@
 using DiscordEye.DiscordListener;
 using DiscordEye.Shared;
 using DiscordEye.Shared.Events;
+using DiscordEye.Shared.Options;
 using MassTransit;
 
 var builder = WebApplication.CreateBuilder(args);

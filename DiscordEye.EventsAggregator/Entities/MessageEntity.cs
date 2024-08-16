@@ -7,15 +7,15 @@ namespace DiscordEye.EventsAggregator.Entities;
 public class MessageEntity
 {
     [Key]
-    public long Id { get; set; }
+    public ulong Id { get; set; }
 
-    public long UserId { get; set; }
+    public ulong UserId { get; set; }
     public UserEntity UserEntity { get; set; }
 
-    public long GuildId { get; set; }
+    public ulong GuildId { get; set; }
     public GuildEntity GuildEntity { get; set; }
 
-    public long ChannelId { get; set; }
+    public ulong ChannelId { get; set; }
     public ChannelEntity ChannelEntity { get; set; }
     
     [MaxLength(4000)]
