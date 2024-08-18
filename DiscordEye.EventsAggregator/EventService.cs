@@ -7,14 +7,14 @@ namespace DiscordEye.EventsAggregator;
 public class EventService : IEventService
 {
     private readonly ApplicationDbContext _applicationDbContext;
-    private readonly DiscordApiClient _discordApiClient;
+    private readonly DiscordNodeApiClient _discordNodeApiClient;
 
     public EventService(
         ApplicationDbContext applicationDbContext,
-        DiscordApiClient discordApiClient)
+        DiscordNodeApiClient discordNodeApiClient)
     {
         _applicationDbContext = applicationDbContext;
-        _discordApiClient = discordApiClient;
+        _discordNodeApiClient = discordNodeApiClient;
     }
 
     public async Task AddReceivedMessageAsync(
@@ -22,11 +22,13 @@ public class EventService : IEventService
         CancellationToken cancellationToken)
     {
         await AddUserIfDoesntExist(
+            messageReceivedEvent.NodeId,
             messageReceivedEvent.UserId,
             cancellationToken);
         await _applicationDbContext.SaveChangesAsync(cancellationToken);
         
         await AddChannelIfDoesntExist(
+            messageReceivedEvent.NodeId,
             messageReceivedEvent.GuildId,
             messageReceivedEvent.ChannelId,
             cancellationToken);
@@ -45,7 +47,10 @@ public class EventService : IEventService
         await _applicationDbContext.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task AddUserIfDoesntExist(long id, CancellationToken cancellationToken)
+    private async Task AddUserIfDoesntExist(
+        int nodeId,
+        long id,
+        CancellationToken cancellationToken)
     {
         var userIsExist = await _applicationDbContext
             .Users
@@ -53,20 +58,25 @@ public class EventService : IEventService
         if (userIsExist)
             return;
         
-        var user = await _discordApiClient.GetUserAsync(
-            "http://localhost:5131",
+        var user = await _discordNodeApiClient.GetUserFromAllNodesAsync(
             id,
             cancellationToken);
         if (user is null)
             throw new ArgumentException($"Cannot find user with id {id}");
 
         foreach (var guildResponse in user.Guilds)
-            await AddGuildIfDoesntExist(guildResponse.Id, cancellationToken);
+            await AddGuildIfDoesntExist(nodeId, long.Parse(guildResponse.Id), cancellationToken);
 
+        var guildEntities = user.Guilds.Select(x => new GuildEntity
+        {
+            Id = long.Parse(x.Id)
+        });
+        
         var userEntity = new UserEntity
         {
-            Id = user.Id,
+            Id = long.Parse(user.Id),
             Username = user.Username,
+            GuildsEntities = guildEntities.ToList()
         };
         await _applicationDbContext
             .Users
@@ -74,6 +84,7 @@ public class EventService : IEventService
     }
 
     private async Task AddChannelIfDoesntExist(
+        int nodeId,
         long guildId,
         long channelId,
         CancellationToken cancellationToken)
@@ -85,8 +96,8 @@ public class EventService : IEventService
         if (channelIsExist)
             return;
 
-        var channel = await _discordApiClient.GetChannelAsync(
-            "http://localhost:5131",
+        var channel = await _discordNodeApiClient.GetChannelAsync(
+            nodeId,
             channelId,
             cancellationToken);
         if (channel is null)
@@ -103,7 +114,10 @@ public class EventService : IEventService
             .AddAsync(channelEntity, cancellationToken);
     }
 
-    private async Task AddGuildIfDoesntExist(long id, CancellationToken cancellationToken)
+    private async Task AddGuildIfDoesntExist(
+        int nodeId,
+        long id,
+        CancellationToken cancellationToken)
     {
         var guildIsExist = await _applicationDbContext
             .Guilds
@@ -112,8 +126,8 @@ public class EventService : IEventService
         if (guildIsExist)
             return;
 
-        var guild = await _discordApiClient.GetGuildAsync(
-            "http://localhost:5131",
+        var guild = await _discordNodeApiClient.GetGuildAsync(
+            nodeId,
             id,
             cancellationToken);
         if (guild is null)
@@ -121,7 +135,7 @@ public class EventService : IEventService
         
         var guildEntity = new GuildEntity
         {
-            Id = guild.Id,
+            Id = long.Parse(guild.Id),
             Name = guild.Name,
             IconUrl = guild.IconUrl
         };

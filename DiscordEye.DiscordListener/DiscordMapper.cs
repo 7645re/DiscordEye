@@ -20,13 +20,13 @@ public static class DiscordMapper
     {
         return new UserResponse
         {
-            Id = (long)userProfile.User.Id,
+            Id = userProfile.User.Id.ToString(),
             Username = userProfile.User.Username.Value,
             Guilds = userProfile
                 .MutualGuilds
                 .Select(x => new GuildResponse
                 {
-                    Id = (long)x.Id
+                    Id = x.Id,
                 })
                 .ToArray()
         };
@@ -36,7 +36,7 @@ public static class DiscordMapper
     {
         return new GuildResponse
         {
-            Id = (long)restGuild.Id,
+            Id = restGuild.Id.ToString(),
             IconUrl = restGuild.IconUrl,
             Name = restGuild.Name
         };

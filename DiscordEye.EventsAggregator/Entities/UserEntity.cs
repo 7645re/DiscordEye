@@ -12,7 +12,7 @@ public class UserEntity
     [MaxLength(32)]
     public string Username { get; set; }
     
-    public ICollection<GuildEntity> GuildsEntities { get; set; } = new List<GuildEntity>();
+    public List<GuildEntity> GuildsEntities { get; set; } = new();
     
-    public ICollection<MessageEntity> MessagesEntities { get; set; } = new List<MessageEntity>();
+    public List<MessageEntity> MessagesEntities { get; set; } = new();
 }

@@ -1,6 +1,8 @@
+using System.Net;
 using System.Threading.Channels;
 using Discord;
 using Discord.API;
+using Discord.Net;
 using Discord.Rest;
 using Discord.WebSocket;
 using DiscordEye.Shared.Events;
@@ -16,12 +18,16 @@ public class DiscordListenerBackgroundService : BackgroundService
     private readonly ILogger<DiscordListenerBackgroundService> _logger;
     private readonly IServiceProvider _serviceProvider;
     private readonly Channel<StreamStartedRequest> _streamStartedRequestChannel;
+    private readonly int _nodeId;
+    private readonly string _token;
 
     public DiscordListenerBackgroundService(
         IOptions<StartupOptions> options,
         ILogger<DiscordListenerBackgroundService> logger,
         IServiceProvider serviceProvider)
     {
+        _token = Environment.GetEnvironmentVariable("Token");
+        _nodeId = int.Parse(Environment.GetEnvironmentVariable("NodeId"));
         _streamStartedRequestChannel = Channel.CreateUnbounded<StreamStartedRequest>();
         _logger = logger;
         _serviceProvider = serviceProvider;
@@ -29,7 +35,8 @@ public class DiscordListenerBackgroundService : BackgroundService
         _client = new DiscordSocketClient(new DiscordSocketConfig
         {
             GatewayIntents = GatewayIntents.All,
-            MessageCacheSize = _options.MessageCacheSize
+            MessageCacheSize = _options.MessageCacheSize,
+            
         });
 
         _client.Ready += async () =>
@@ -47,6 +54,7 @@ public class DiscordListenerBackgroundService : BackgroundService
             {
                 var eventMessage = new UserChangedAvatarEvent
                 {
+                    NodeId = _nodeId,
                     UserId = (long)userBefore.Id,
                     OldAvatarUrl = userBefore.GetAvatarUrl(),
                     NewAvatarUrl = userAfter.GetAvatarUrl(),
@@ -65,6 +73,7 @@ public class DiscordListenerBackgroundService : BackgroundService
             {
                 var eventMessage = new UserGuildChangedNicknameEvent
                 {
+                    NodeId = _nodeId,
                     GuildId = (long)before.Guild.Id,
                     UserId = (long)user.Id,
                     OldUsername = before.Nickname,
@@ -80,6 +89,7 @@ public class DiscordListenerBackgroundService : BackgroundService
         {
             var eventMessage = new UserBannedEvent
             {
+                NodeId = _nodeId,
                 GuildId = (long)guild.Id,
                 UserId = (long)user.Id,
                 Timestamp = DateTimeOffset.Now
@@ -107,6 +117,7 @@ public class DiscordListenerBackgroundService : BackgroundService
 
             var eventMessage = new UserVoiceChannelActionEvent
             {
+                NodeId = _nodeId,
                 GuildId = (long)voiceStateAfter.VoiceChannel.Guild.Id,
                 ChannelId = (long)voiceStateAfter.VoiceChannel.Id,
                 UserId = (long)user.Id,
@@ -122,6 +133,7 @@ public class DiscordListenerBackgroundService : BackgroundService
 
             var eventMessage = new MessageDeletedEvent
             {
+                NodeId = _nodeId,
                 Timestamp = cacheableMessage.Value.Timestamp,
                 MessageId = (long)cacheableMessage.Value.Id,
             };
@@ -136,6 +148,7 @@ public class DiscordListenerBackgroundService : BackgroundService
 
             var eventMessage = new MessageReceivedEvent
             {
+                NodeId = _nodeId,
                 GuildId = (long)guildChannel.Guild.Id,
                 ChannelId = (long)guildChannel.Id,
                 UserId = (long)message.Author.Id,
@@ -163,6 +176,7 @@ public class DiscordListenerBackgroundService : BackgroundService
 
             var eventMessage = new MessageUpdatedEvent
             {
+                NodeId = _nodeId,
                 MessageId = (long)cacheableMessage.Value.Id,
                 NewContent = cacheableMessage.Value.Content,
                 Timestamp = DateTimeOffset.Now
@@ -202,7 +216,7 @@ public class DiscordListenerBackgroundService : BackgroundService
                     request.ChannelId,
                     request.UserId);
             }
-            catch (Discord.Net.HttpException)
+            catch (HttpException)
             {
             }
 
@@ -215,6 +229,7 @@ public class DiscordListenerBackgroundService : BackgroundService
 
             var eventMessage = new UserVoiceChannelActionEvent
             {
+                NodeId = _nodeId,
                 GuildId = (long)request.GuildId,
                 ChannelId = (long)request.ChannelId,
                 UserId = (long)request.UserId,
@@ -228,26 +243,35 @@ public class DiscordListenerBackgroundService : BackgroundService
         }
     }
 
-    public async Task<IChannel> GetChannelAsync(ulong id)
+    public async Task<IChannel?> GetChannelAsync(ulong id)
     {
         return await _client.Rest.GetChannelAsync(id);
     }
     
-    public async Task<UserProfile> GetUserProfileAsync(ulong id)
+    public async Task<UserProfile?> GetUserProfileAsync(ulong id)
     {
-        return await _client.Rest.GetUserProfileAsync(id);
+        try
+        {
+            return await _client.Rest.GetUserProfileAsync(id);
+        }
+        catch (HttpException e)
+        {
+            if (e.HttpCode == HttpStatusCode.NotFound)
+                return null;
+            throw;
+        }
     }
 
-    public async Task<RestGuild> GetGuildAsync(ulong id)
+    public async Task<RestGuild?> GetGuildAsync(ulong id)
     {
         return await _client.Rest.GetGuildAsync(id);
     }
     
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await _client.LoginAsync(TokenType.User, _options.Token);
+        await _client.LoginAsync(TokenType.User, _token);
         await _client.StartAsync();
-        _logger.LogInformation($"SelfBot started with token {_options.Token[..10]}" +
+        _logger.LogInformation($"SelfBot started with token {_token[..10]}" +
                                $" in {Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}");
 
         await PollingStreamPreviewAsync();

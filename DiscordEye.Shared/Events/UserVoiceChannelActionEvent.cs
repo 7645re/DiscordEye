@@ -2,6 +2,7 @@ namespace DiscordEye.Shared.Events;
 
 public class UserVoiceChannelActionEvent
 {
+    public required int NodeId { get; set; }
     public required long GuildId { get; set; }
     public required long ChannelId { get; set; }
     public required long UserId { get; set; }

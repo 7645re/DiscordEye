@@ -16,7 +16,21 @@
       "launchUrl": "swagger",
       "applicationUrl": "http://localhost:5131",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "NodeId": 1,
+        "Token": "MTA1MTE2NTcwMDUxNDkxODQzMA.G_KXjn.8rigv70BYi6foz0XF0ytSEtPVhki_99j6jSRlU"
+      }
+    },
+    "http2": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "applicationUrl": "http://localhost:5132",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "NodeId": 2,
+        "Token": "MTI1Nzk2NzMyNTY3MjUwOTUwMg.GEo7AJ.aE4e3MWan1aIH-dfj6PmryP0VwhrCPvYf9qe20"
       }
     },
     "https": {

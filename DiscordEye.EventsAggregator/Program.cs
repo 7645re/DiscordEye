@@ -2,6 +2,7 @@ using DiscordEye.EventsAggregator;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.Configure<NodeAddressesOptions>(builder.Configuration.GetSection("NodeAddresses"));
 builder.Services.AddTransient<IEventService, EventService>();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -10,7 +11,7 @@ builder.Services.AddKafka(builder);
 builder.Services.AddDatabase(builder
     .Configuration
     .GetConnectionString("DefaultConnection"));
-builder.Services.AddHttpClient<DiscordApiClient>();
+builder.Services.AddHttpClient<DiscordNodeApiClient>();
 
 var app = builder.Build();
 if (app.Environment.IsDevelopment())
