@@ -1,3 +1,4 @@
+using DiscordEye.DiscordListener.Filters;
 using DiscordEye.DiscordListener.Mappers;
 using DiscordEye.Shared.DiscordListenerApi.Response;
 using Microsoft.AspNetCore.Mvc;
@@ -6,15 +7,16 @@ namespace DiscordEye.DiscordListener;
 
 [ApiController]
 [Route("discord")]
+[CloudFlareExceptionFilter]
 public class DiscordController : ControllerBase
 {
     [HttpGet("users/{id:long}")]
-    public async Task<DiscordUserResponse> GetUser(ulong id, [FromQuery] bool guildInfo = false)
+    public async Task<DiscordUserResponse> GetUser(ulong id, [FromQuery] bool withGuilds = false)
     {
         var backgroundService = HttpContext
             .RequestServices
             .GetHostedService<DiscordListenerBackgroundService>();
-        var userProfile = await backgroundService.GetUserAsync(id, guildInfo);
+        var userProfile = await backgroundService.GetUserAsync(id, withGuilds);
         return userProfile.ToDiscordUserResponse();
     }
 

@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+option csharp_namespace = "DiscordEye.ProxyDistributor";
+
+package proxyDistributor;
+
+message ProxyInfo {
+  string address = 1;
+  string port = 2;
+  string login = 3;
+  string password = 4;
+}
+
+message ProxyRequest {
+  string service_name = 1;
+}
+
+message ProxyResponse {
+  oneof result {
+    ProxyInfo proxy = 1;
+    string error_message = 2;
+  }
+}
+
+service ProxyDistributorService {
+  rpc TakeProxy (ProxyRequest) returns (ProxyResponse);
+}
