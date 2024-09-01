@@ -5,13 +5,14 @@ using Discord.Net;
 using Discord.Net.Rest;
 using Discord.Rest;
 using Discord.WebSocket;
-using DiscordEye.DiscordListener.Dto;
-using DiscordEye.DiscordListener.Mappers;
+using DiscordEye.DiscordListener;
+using DiscordEye.Node.Dto;
+using DiscordEye.Node.Mappers;
 using DiscordEye.Shared.Events;
 using MassTransit;
 using Microsoft.Extensions.Options;
 
-namespace DiscordEye.DiscordListener;
+namespace DiscordEye.Node;
 
 public class DiscordListenerBackgroundService : BackgroundService
 {
@@ -299,7 +300,7 @@ public class DiscordListenerBackgroundService : BackgroundService
         }
     }
 
-    public DiscordGuild GetGuild(
+    public DiscordGuild? GetGuild(
         ulong id,
         bool withChannels = false)
     {

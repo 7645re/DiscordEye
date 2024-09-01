@@ -7,14 +7,14 @@ namespace DiscordEye.EventsAggregator;
 public class EventService : IEventService
 {
     private readonly ApplicationDbContext _applicationDbContext;
-    private readonly DiscordApiClient _discordApiClient;
+    private readonly DiscordNodeApiClient _discordNodeApiClient;
 
     public EventService(
         ApplicationDbContext applicationDbContext,
-        DiscordApiClient discordApiClient)
+        DiscordNodeApiClient discordNodeApiClient)
     {
         _applicationDbContext = applicationDbContext;
-        _discordApiClient = discordApiClient;
+        _discordNodeApiClient = discordNodeApiClient;
     }
 
     public async Task AddReceivedMessageAsync(
@@ -53,7 +53,7 @@ public class EventService : IEventService
         if (userIsExist)
             return;
         
-        var user = await _discordApiClient.GetUserAsync(
+        var user = await _discordNodeApiClient.GetUserAsync(
             "http://localhost:5131",
             id, cancellationToken: cancellationToken);
         if (user is null)
@@ -84,7 +84,7 @@ public class EventService : IEventService
         if (channelIsExist)
             return;
 
-        var channel = await _discordApiClient.GetChannelAsync(
+        var channel = await _discordNodeApiClient.GetChannelAsync(
             "http://localhost:5131",
             channelId,
             cancellationToken);
@@ -111,7 +111,7 @@ public class EventService : IEventService
         if (guildIsExist)
             return;
 
-        var guild = await _discordApiClient.GetGuildAsync(
+        var guild = await _discordNodeApiClient.GetGuildAsync(
             "http://localhost:5131",
             id,
             cancellationToken);

@@ -1,4 +1,4 @@
-namespace DiscordEye.DiscordListenerNode;
+namespace DiscordEye.Node;
 
 public class StreamStartedRequest
 {

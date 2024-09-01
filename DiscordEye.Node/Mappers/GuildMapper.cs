@@ -1,8 +1,8 @@
 using Discord.WebSocket;
-using DiscordEye.DiscordListener.Dto;
-using DiscordEye.Shared.DiscordListenerApi.Response;
+using DiscordEye.DiscordListener;
+using DiscordEye.Node.Dto;
 
-namespace DiscordEye.DiscordListener.Mappers;
+namespace DiscordEye.Node.Mappers;
 
 public static class GuildMapper
 {
@@ -15,10 +15,9 @@ public static class GuildMapper
             Name = discordGuild.Name,
             OwnerId = discordGuild.OwnerId.ToString(),
             MemberCount = discordGuild.MemberCount,
-            Channels = discordGuild
+            Channels = {discordGuild
                 .Channels
-                .Select(x => x.ToChannelResponse())
-                .ToList()
+                .Select(x => x.ToChannelResponse())}
         };
     }
 

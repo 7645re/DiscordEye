@@ -1,10 +1,8 @@
-using Discord;
-using Discord.Rest;
 using Discord.WebSocket;
-using DiscordEye.DiscordListener.Dto;
-using DiscordEye.Shared.DiscordListenerApi.Response;
+using DiscordEye.DiscordListener;
+using DiscordEye.Node.Dto;
 
-namespace DiscordEye.DiscordListener.Mappers;
+namespace DiscordEye.Node.Mappers;
 
 public static class ChannelMapper
 {

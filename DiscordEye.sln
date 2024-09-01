@@ -4,9 +4,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordEye.EventsAggregator
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordEye.Shared", "DiscordEye.Shared\DiscordEye.Shared.csproj", "{1CDDCBC5-7654-407F-A6F2-1929B120B1EC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordEye.DiscordListener", "DiscordEye.DiscordListener\DiscordEye.DiscordListener.csproj", "{9883443A-03B6-414D-99D8-91C7E33C810D}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordEye.ProxyDistributor", "DiscordEye.ProxyDistributor\DiscordEye.ProxyDistributor.csproj", "{FE5B8439-B2B4-4D2D-B787-271AC37D98C4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordEye.Node", "DiscordEye.Node\DiscordEye.Node.csproj", "{5D0A81CB-8860-4383-886E-93C114128935}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -22,13 +22,13 @@ Global
 		{1CDDCBC5-7654-407F-A6F2-1929B120B1EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1CDDCBC5-7654-407F-A6F2-1929B120B1EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1CDDCBC5-7654-407F-A6F2-1929B120B1EC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9883443A-03B6-414D-99D8-91C7E33C810D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9883443A-03B6-414D-99D8-91C7E33C810D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9883443A-03B6-414D-99D8-91C7E33C810D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9883443A-03B6-414D-99D8-91C7E33C810D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{FE5B8439-B2B4-4D2D-B787-271AC37D98C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{FE5B8439-B2B4-4D2D-B787-271AC37D98C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FE5B8439-B2B4-4D2D-B787-271AC37D98C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FE5B8439-B2B4-4D2D-B787-271AC37D98C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D0A81CB-8860-4383-886E-93C114128935}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D0A81CB-8860-4383-886E-93C114128935}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D0A81CB-8860-4383-886E-93C114128935}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D0A81CB-8860-4383-886E-93C114128935}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -1,5 +1,5 @@
-using DiscordEye.DiscordListener;
-using DiscordEye.Shared;
+using DiscordEye.Node;
+using DiscordEye.Node.Services;
 using DiscordEye.Shared.Events;
 using DiscordEye.Shared.Options;
 using MassTransit;
@@ -11,10 +11,7 @@ var kafkaOptions = builder
     .GetRequiredSection("Kafka")
     .Get<KafkaOptions>();
 
-builder.Services.AddControllers();
 builder.Services.Configure<StartupOptions>(builder.Configuration.GetRequiredSection("Startup"));
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 builder.Services.AddMassTransit(x =>
 {
     x.SetKebabCaseEndpointNameFormatter();
@@ -36,16 +33,8 @@ builder.Services.AddMassTransit(x =>
         });
     });
 });
+builder.Services.AddGrpc();
 builder.Services.AddHostedService<DiscordListenerBackgroundService>();
-
 var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseHttpsRedirection();
-app.MapControllers();
+app.MapGrpcService<DiscordListenerService>();
 app.Run();

@@ -1,69 +1,69 @@
 using Discord.WebSocket;
 using DiscordEye.Shared.Events;
 
-namespace DiscordEye.DiscordListenerNode;
+namespace DiscordEye.Node;
 
 public static class DiscordHelper
 {
-    public static DiscordEventType DetermineEventType(
+    public static UserVoiceChannelActionType DetermineEventType(
         SocketVoiceState channelStateBefore,
         SocketVoiceState channelStateAfter)
     {
         if (channelStateBefore.VoiceChannel == null 
             && channelStateAfter.VoiceChannel != null)
         {
-            return DiscordEventType.JoinedVoiceChannel;
+            return UserVoiceChannelActionType.JoinedVoiceChannel;
         }
         
         if (channelStateBefore.VoiceChannel != null 
             && channelStateAfter.VoiceChannel == null)
         {
-            return DiscordEventType.LeftVoiceChannel;
+            return UserVoiceChannelActionType.LeftVoiceChannel;
         }
         
         if (channelStateBefore.IsSelfDeafened 
             && !channelStateAfter.IsSelfDeafened)
         {
-            return DiscordEventType.Undeafened;
+            return UserVoiceChannelActionType.Undeafened;
         }
         
         if (!channelStateBefore.IsSelfDeafened 
             && channelStateAfter.IsSelfDeafened)
         {
-            return DiscordEventType.Deafened;
+            return UserVoiceChannelActionType.Deafened;
         }
         
         if (channelStateBefore.IsSelfMuted 
             && !channelStateAfter.IsSelfMuted)
         {
-            return DiscordEventType.Unmuted;
+            return UserVoiceChannelActionType.Unmuted;
         }
         
         if (!channelStateBefore.IsSelfMuted 
             && channelStateAfter.IsSelfMuted)
         {
-            return DiscordEventType.Muted;
+            return UserVoiceChannelActionType.Muted;
         }
         
         if (!channelStateBefore.IsVideoing 
             && channelStateAfter.IsVideoing)
         {
-            return DiscordEventType.VideoEnabled;
+            return UserVoiceChannelActionType.VideoEnabled;
         }
         
         if (channelStateBefore.IsVideoing && !channelStateAfter.IsVideoing)
         {
-            return DiscordEventType.VideoDisabled;
+            return UserVoiceChannelActionType.VideoDisabled;
         }
         
         if (channelStateBefore.IsStreaming && !channelStateAfter.IsStreaming)
         {
-            return DiscordEventType.StreamStopped;
+            return UserVoiceChannelActionType.StreamStopped;
         }
 
         if (!channelStateBefore.IsStreaming && channelStateAfter.IsStreaming)
         {
-            return DiscordEventType.StreamStarted;
+            return UserVoiceChannelActionType.StreamStarted;
         }
 
         throw new ArgumentException("Unknown event type");

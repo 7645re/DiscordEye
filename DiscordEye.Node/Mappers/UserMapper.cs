@@ -1,8 +1,8 @@
 using Discord.API;
-using DiscordEye.DiscordListener.Dto;
-using DiscordEye.Shared.DiscordListenerApi.Response;
+using DiscordEye.DiscordListener;
+using DiscordEye.Node.Dto;
 
-namespace DiscordEye.DiscordListener.Mappers;
+namespace DiscordEye.Node.Mappers;
 
 public static class UserMapper
 {
@@ -24,18 +24,20 @@ public static class UserMapper
         {
             Id = discordUser.Id,
             Username = discordUser.Username,
-            Guilds = discordUser.Guilds.Select(x => new DiscordGuildResponse
+            Guilds =
             {
-                Id = x.Id.ToString(),
-                IconUrl = x.IconUrl,
-                Name = x.Name,
-                OwnerId = x.OwnerId.ToString(),
-                MemberCount = x.MemberCount,
-                Channels = x
-                    .Channels
-                    .Select(x => x.ToChannelResponse())
-                    .ToList()
-            }).ToList()
+                discordUser.Guilds.Select(x => new DiscordGuildResponse
+                {
+                    Id = x.Id.ToString(),
+                    IconUrl = x.IconUrl,
+                    Name = x.Name,
+                    OwnerId = x.OwnerId.ToString(),
+                    MemberCount = x.MemberCount,
+                    Channels = { x
+                        .Channels
+                        .Select(x => x.ToChannelResponse()) }
+                })
+            }
         };
     }
 }

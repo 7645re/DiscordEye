@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+option csharp_namespace = "DiscordEye.DiscordListener";
+
+package discordListener;
+
+enum DiscordChannelTypeResponse {
+  TEXT_CHANNEL = 0;
+  VOICE_CHANNEL = 1;
+  CATEGORY_CHANNEL = 2;
+}
+
+message DiscordChannelResponse {
+  string id = 1;
+  string name = 2;
+  DiscordChannelTypeResponse type = 3;
+}
+
+message DiscordGuildResponse {
+  string id = 1;
+  string icon_url = 2;
+  string name = 3;
+  string owner_id = 4;
+  int32 member_count = 5;
+  repeated DiscordChannelResponse channels = 6;
+}
+
+message DiscordUserResponse {
+  uint64 id = 1;
+  string username = 2;
+  repeated DiscordGuildResponse guilds = 3;
+}
+
+message UserRequest {
+  uint64 user_id = 1;
+  bool with_guilds = 2;
+}
+
+message GuildRequest {
+  uint64 guild_id = 1;
+  bool with_channels = 2;
+}
+
+service DiscordListener {
+  rpc GetUser (UserRequest) returns (DiscordUserResponse);
+  rpc GetGuild (GuildRequest) returns (DiscordGuildResponse);
+}

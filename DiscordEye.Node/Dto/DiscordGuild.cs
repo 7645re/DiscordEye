@@ -1,4 +1,4 @@
-namespace DiscordEye.DiscordListener.Dto;
+namespace DiscordEye.Node.Dto;
 
 public class DiscordGuild
 {

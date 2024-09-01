@@ -6,15 +6,12 @@ namespace DiscordEye.EventsAggregator;
 
 public class DiscordNodeApiClient
 {
-    private readonly NodeAddressesOptions _nodeAddresses;
     private readonly HttpClient _httpClient;
     private readonly ILogger<DiscordNodeApiClient> _logger;
 
     public DiscordNodeApiClient(
-        IOptions<NodeAddressesOptions> nodeAddresses,
         HttpClient httpClient, ILogger<DiscordNodeApiClient> logger)
     {
-        _nodeAddresses = nodeAddresses.Value;
         _httpClient = httpClient;
         _logger = logger;
     }

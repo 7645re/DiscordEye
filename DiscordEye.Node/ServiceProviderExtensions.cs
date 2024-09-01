@@ -1,4 +1,4 @@
-namespace DiscordEye.DiscordListener;
+namespace DiscordEye.Node;
 
 public static class ServiceProviderExtensions
 {

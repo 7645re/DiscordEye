@@ -12,7 +12,7 @@ builder.Services.AddKafka(builder);
 builder.Services.AddDatabase(builder
     .Configuration
     .GetConnectionString("DefaultConnection"));
-builder.Services.AddHttpClient<DiscordApiClient>();
+builder.Services.AddHttpClient<DiscordNodeApiClient>();
 builder.Services.AddMemoryCache();
 
 var app = builder.Build();
