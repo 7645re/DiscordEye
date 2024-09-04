@@ -13,20 +13,40 @@ public class ProxyDistributorService : ProxyDistributor.ProxyDistributorService.
         _proxyStorageService = proxyStorageService;
     }
 
-    public override Task<ProxyResponse> TakeProxy(ProxyRequest request, ServerCallContext context)
+    public override Task<TakeProxyResponse> TakeProxy(TakeProxyRequest request, ServerCallContext context)
     {
-        var takenProxy = _proxyStorageService.TakeProxy(request.ServiceName);
+        if (!_proxyStorageService.TryTakeProxy(out var takenProxyWithKey))
+            return Task.FromResult(new TakeProxyResponse
+            {
+                Proxy = null,
+                ErrorMessage = "Failed to take proxy"
+            });
 
-        var result = new ProxyResponse();
-        if (takenProxy is null)
+        return Task.FromResult(new TakeProxyResponse
         {
-            result.ErrorMessage = "Proxy not found";
-        }
-        else
-        {
-            result.Proxy = takenProxy.ToProxyInfo();
-        }
+            Proxy = takenProxyWithKey.takenProxy.ToProxyInfo(takenProxyWithKey.releaseKey)
+        });
+    }
 
-        return Task.FromResult(result);
+    public override Task<ReleaseProxyResponse> ReleaseProxy(ReleaseProxyRequest request, ServerCallContext context)
+    {
+        if (!Guid.TryParse(request.ReleaseKey, out var releaseKey))
+            return Task.FromResult(new ReleaseProxyResponse
+            {
+                OperationSuccessful = false,
+                ErrorMessage = "Cannot parse release key"
+            });
+        
+        if (!_proxyStorageService.TryReleaseProxy(request.ProxyId, releaseKey))
+            return Task.FromResult(new ReleaseProxyResponse
+            {
+                OperationSuccessful = false,
+                ErrorMessage = "Failed to release proxy"
+            });
+        
+        return Task.FromResult(new ReleaseProxyResponse
+        {
+            OperationSuccessful = true
+        });
     }
 }

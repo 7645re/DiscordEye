@@ -13,42 +13,53 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Protobuf Include="Protos\discord_listener.proto">
-        <GrpcServices>Server</GrpcServices>
-        <Access>Public</Access>
-        <ProtoCompile>True</ProtoCompile>
-        <CompileOutputs>True</CompileOutputs>
-        <OutputDir>obj\Debug/net8.0/</OutputDir>
-        <Generator>MSBuild:Compile</Generator>
-      </Protobuf>
+        <Protobuf Include="../DiscordEye.Shared/Protos/proxy_distributor.proto">
+            <GrpcServices>Client</GrpcServices>
+            <Access>Public</Access>
+            <ProtoCompile>True</ProtoCompile>
+            <CompileOutputs>True</CompileOutputs>
+            <OutputDir>obj\Debug/net8.0/</OutputDir>
+            <Generator>MSBuild:Compile</Generator>
+        </Protobuf>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Protobuf Include="../DiscordEye.Shared/Protos/discord_listener.proto">
+            <GrpcServices>Server</GrpcServices>
+            <Access>Public</Access>
+            <ProtoCompile>True</ProtoCompile>
+            <CompileOutputs>True</CompileOutputs>
+            <OutputDir>obj\Debug/net8.0/</OutputDir>
+            <Generator>MSBuild:Compile</Generator>
+        </Protobuf>
+    </ItemGroup>
+    
+    <ItemGroup>
+      <ProjectReference Include="..\DiscordEye.Shared\DiscordEye.Shared.csproj" />
     </ItemGroup>
 
     <ItemGroup>
       <Reference Include="Discord.Net-Anarchy">
-        <HintPath>..\..\Discord.Net\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net-Anarchy.dll</HintPath>
+        <HintPath>..\..\discord-net-anarchy\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net-Anarchy.dll</HintPath>
       </Reference>
       <Reference Include="Discord.Net.Commands">
-        <HintPath>..\..\Discord.Net\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.Commands.dll</HintPath>
+        <HintPath>..\..\discord-net-anarchy\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.Commands.dll</HintPath>
       </Reference>
       <Reference Include="Discord.Net.Core">
-        <HintPath>..\..\Discord.Net\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.Core.dll</HintPath>
+        <HintPath>..\..\discord-net-anarchy\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.Core.dll</HintPath>
       </Reference>
       <Reference Include="Discord.Net.Interactions">
-        <HintPath>..\..\Discord.Net\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.Interactions.dll</HintPath>
+        <HintPath>..\..\discord-net-anarchy\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.Interactions.dll</HintPath>
       </Reference>
       <Reference Include="Discord.Net.Rest">
-        <HintPath>..\..\Discord.Net\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.Rest.dll</HintPath>
+        <HintPath>..\..\discord-net-anarchy\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.Rest.dll</HintPath>
       </Reference>
       <Reference Include="Discord.Net.Webhook">
-        <HintPath>..\..\Discord.Net\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.Webhook.dll</HintPath>
+        <HintPath>..\..\discord-net-anarchy\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.Webhook.dll</HintPath>
       </Reference>
       <Reference Include="Discord.Net.WebSocket">
-        <HintPath>..\..\Discord.Net\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.WebSocket.dll</HintPath>
+        <HintPath>..\..\discord-net-anarchy\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.WebSocket.dll</HintPath>
       </Reference>
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\DiscordEye.Shared\DiscordEye.Shared.csproj" />
     </ItemGroup>
 
 </Project>

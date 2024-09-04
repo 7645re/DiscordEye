@@ -11,19 +11,19 @@ public static class ProxyMapper
             proxyInfo.Address,
             proxyInfo.Port,
             proxyInfo.Login,
-            proxyInfo.Password,
-            false,
-            null);
+            proxyInfo.Password);
     }
 
-    public static ProxyInfo ToProxyInfo(this Proxy proxy)
+    public static ProxyInfo ToProxyInfo(this Proxy proxy, Guid releaseKey)
     {
         return new ProxyInfo
         {
+            Id = proxy.Id,
             Address = proxy.Address,
             Port = proxy.Port,
             Login = proxy.Login,
-            Password = proxy.Password
+            Password = proxy.Password,
+            ReleaseKey = releaseKey.ToString()
         };
     }
 }

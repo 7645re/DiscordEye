@@ -11,9 +11,16 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Protobuf Include="Protos\proxy_distributor.proto" GrpcServices="Server" />
+        <Protobuf Include="../DiscordEye.Shared/Protos/proxy_distributor.proto">
+            <GrpcServices>Server</GrpcServices>
+            <Access>Public</Access>
+            <ProtoCompile>True</ProtoCompile>
+            <CompileOutputs>True</CompileOutputs>
+            <OutputDir>obj\Debug/net8.0/</OutputDir>
+            <Generator>MSBuild:Compile</Generator>
+        </Protobuf>
     </ItemGroup>
-
+    
     <ItemGroup>
       <Content Update="appsettings.Development.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>

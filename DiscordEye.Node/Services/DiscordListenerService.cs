@@ -1,4 +1,5 @@
 using DiscordEye.DiscordListener;
+using DiscordEye.Node.BackgroundServices;
 using DiscordEye.Node.Mappers;
 using Grpc.Core;
 
@@ -12,11 +13,12 @@ public class DiscordListenerService : DiscordListener.DiscordListener.DiscordLis
     {
         _serviceProvider = serviceProvider;
     }
-
-    public override Task<DiscordGuildResponse> GetGuild(GuildRequest request, ServerCallContext context)
+    
+    public override async Task<DiscordUserGrpcResponse> GetUser(DiscordUserGrpcRequest request, ServerCallContext context)
     {
-        var discordListener = _serviceProvider.GetHostedService<DiscordListenerBackgroundService>();
-        var guild = discordListener.GetGuild(request.GuildId, request.WithChannels);
-        return Task.FromResult(guild.ToGuildResponse());
+        // TODO: maybe set background service to field from service provider
+        var discordFacade = _serviceProvider.GetHostedService<DiscordFacadeBackgroundService>();
+        var discordUser = await discordFacade.GetUserAsync(request.UserId);
+        return discordUser.ToDiscordUserGrpcResponse();
     }
 }

@@ -18,25 +18,23 @@ public static class UserMapper
         };
     }
 
-    public static DiscordUserResponse ToDiscordUserResponse(this DiscordUser discordUser)
+    public static DiscordUserGrpcResponse ToDiscordUserGrpcResponse(this DiscordUser discordUser)
     {
-        return new DiscordUserResponse
+        return new DiscordUserGrpcResponse
         {
             Id = discordUser.Id,
             Username = discordUser.Username,
-            Guilds =
+            Guilds = 
             {
-                discordUser.Guilds.Select(x => new DiscordGuildResponse
+                discordUser.Guilds.Select(guild => new DiscordGuildGrpcResponse
                 {
-                    Id = x.Id.ToString(),
-                    IconUrl = x.IconUrl,
-                    Name = x.Name,
-                    OwnerId = x.OwnerId.ToString(),
-                    MemberCount = x.MemberCount,
-                    Channels = { x
-                        .Channels
-                        .Select(x => x.ToChannelResponse()) }
-                })
+                    Id = guild.Id.ToString(),
+                    IconUrl = guild.IconUrl,
+                    Name = guild.Name,
+                    OwnerId = guild.OwnerId.ToString(),
+                    MemberCount = guild.MemberCount,
+                    Channels = { guild.Channels.Select(channel => channel.ToChannelResponse()).ToList() }
+                }).ToList()
             }
         };
     }

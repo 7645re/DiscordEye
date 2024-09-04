@@ -1,6 +1,6 @@
-namespace DiscordEye.Node;
+namespace DiscordEye.Node.Options;
 
-public class StartupOptions
+public class DiscordOptions
 {
     public string Token { get; set; }
     public int MessageCacheSize { get; set; }

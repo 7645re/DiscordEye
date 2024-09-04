@@ -1,8 +1,11 @@
 using DiscordEye.Node;
+using DiscordEye.Node.BackgroundServices;
+using DiscordEye.Node.Options;
 using DiscordEye.Node.Services;
 using DiscordEye.Shared.Events;
 using DiscordEye.Shared.Options;
 using MassTransit;
+using ProxyDistributorService = DiscordEye.ProxyDistributor.ProxyDistributorService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +14,15 @@ var kafkaOptions = builder
     .GetRequiredSection("Kafka")
     .Get<KafkaOptions>();
 
-builder.Services.Configure<StartupOptions>(builder.Configuration.GetRequiredSection("Startup"));
+var proxyDistributorUrl = builder.Configuration.GetValue<string>("ProxyDistributorUrl");
+if (proxyDistributorUrl is null)
+    throw new ArgumentException($"ProxyDistributorUrl is null, check appsettings.json file");
+
+builder.Services.Configure<DiscordOptions>(builder.Configuration.GetRequiredSection("Discord"));
+builder.Services.AddGrpcClient<ProxyDistributorService.ProxyDistributorServiceClient>(opt =>
+{
+    opt.Address = new Uri(proxyDistributorUrl);
+});
 builder.Services.AddMassTransit(x =>
 {
     x.SetKebabCaseEndpointNameFormatter();
@@ -34,7 +45,7 @@ builder.Services.AddMassTransit(x =>
     });
 });
 builder.Services.AddGrpc();
-builder.Services.AddHostedService<DiscordListenerBackgroundService>();
+builder.Services.AddHostedService<DiscordFacadeBackgroundService>();
 var app = builder.Build();
 app.MapGrpcService<DiscordListenerService>();
 app.Run();

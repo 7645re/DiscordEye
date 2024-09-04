@@ -16,7 +16,7 @@ message DiscordChannelResponse {
   DiscordChannelTypeResponse type = 3;
 }
 
-message DiscordGuildResponse {
+message DiscordGuildGrpcResponse {
   string id = 1;
   string icon_url = 2;
   string name = 3;
@@ -25,23 +25,23 @@ message DiscordGuildResponse {
   repeated DiscordChannelResponse channels = 6;
 }
 
-message DiscordUserResponse {
+message DiscordUserGrpcResponse {
   uint64 id = 1;
   string username = 2;
-  repeated DiscordGuildResponse guilds = 3;
+  repeated DiscordGuildGrpcResponse guilds = 3;
 }
 
-message UserRequest {
+message DiscordUserGrpcRequest {
   uint64 user_id = 1;
   bool with_guilds = 2;
 }
 
-message GuildRequest {
+message DiscordGuildGrpcRequest {
   uint64 guild_id = 1;
   bool with_channels = 2;
 }
 
 service DiscordListener {
-  rpc GetUser (UserRequest) returns (DiscordUserResponse);
-  rpc GetGuild (GuildRequest) returns (DiscordGuildResponse);
+  rpc GetUser (DiscordUserGrpcRequest) returns (DiscordUserGrpcResponse);
+  rpc GetGuild (DiscordGuildGrpcRequest) returns (DiscordGuildGrpcResponse);
 }

@@ -7,49 +7,53 @@ public class Proxy
     public readonly string Port;
     public readonly string Login;
     public readonly string Password;
-    private bool _isUsing;
-    public string? WhoUsing;
+    private Guid? _releaseKey;
+    private readonly object _lockObjet = new();
 
     public Proxy(
         int id,
         string address,
         string port,
         string login,
-        string password,
-        bool isUsing,
-        string? whoUsing)
+        string password)
     {
         Address = address;
         Port = port;
         Login = login;
         Password = password;
-        _isUsing = isUsing;
-        WhoUsing = whoUsing;
         Id = id;
     }
 
     public bool IsFree()
     {
-        return !_isUsing;    
+        return _releaseKey is null;
     }
 
-    public bool Take(string name)
+    public bool TryTake(out Guid? releaseKey)
     {
-        if (!IsFree())
-            return false;
+        lock (_lockObjet)
+        {
+            if (!IsFree())
+            {
+                releaseKey = null;
+                return false;
+            }
 
-        WhoUsing = name;
-        _isUsing = true;
-        return true;
+            _releaseKey = Guid.NewGuid();
+            releaseKey = _releaseKey;
+            return true;    
+        }
     }
 
-    public bool Release()
+    public bool TryRelease(Guid releaseKey)
     {
-        if (IsFree())
-            return false;
+        lock (_lockObjet)
+        {
+            if (IsFree() || _releaseKey!.Value != releaseKey)
+                return false;
 
-        WhoUsing = null;
-        _isUsing = false;
-        return true;
+            _releaseKey = null;
+            return true;    
+        }
     }
 }

@@ -6,18 +6,19 @@ namespace DiscordEye.Node.Mappers;
 
 public static class GuildMapper
 {
-    public static DiscordGuildResponse ToGuildResponse(this DiscordGuild discordGuild)
+    public static DiscordGuildGrpcResponse ToGuildResponse(this DiscordGuild discordGuild)
     {
-        return new DiscordGuildResponse
+        return new DiscordGuildGrpcResponse
         {
             Id = discordGuild.Id.ToString(),
             IconUrl = discordGuild.IconUrl,
             Name = discordGuild.Name,
             OwnerId = discordGuild.OwnerId.ToString(),
             MemberCount = discordGuild.MemberCount,
-            Channels = {discordGuild
+            Channels = { discordGuild
                 .Channels
-                .Select(x => x.ToChannelResponse())}
+                .Select(x => x.ToChannelResponse())
+                .ToList() }
         };
     }
 
