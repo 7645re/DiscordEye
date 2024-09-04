@@ -2,15 +2,25 @@ using DiscordEye.ProxyDistributor.Mappers;
 using DiscordEye.ProxyDistributor.Services.ProxyStorage;
 using Grpc.Core;
 
-namespace DiscordEye.ProxyDistributor.Services;
+namespace DiscordEye.ProxyDistributor.Services.ProxyDistributor;
 
-public class ProxyDistributorService : ProxyDistributor.ProxyDistributorService.ProxyDistributorServiceBase
+public class ProxyDistributorService 
+    : DiscordEye.ProxyDistributor.ProxyDistributorService.ProxyDistributorServiceBase
 {
     private readonly IProxyStorageService _proxyStorageService;
 
     public ProxyDistributorService(IProxyStorageService proxyStorageService)
     {
         _proxyStorageService = proxyStorageService;
+    }
+
+    public override Task<GetProxiesResponse> GetProxies(GetProxiesRequest request, ServerCallContext context)
+    {
+        var proxies = _proxyStorageService.GetProxies();
+        return Task.FromResult(new GetProxiesResponse
+        {
+            Proxies = { proxies }
+        });
     }
 
     public override Task<TakeProxyResponse> TakeProxy(TakeProxyRequest request, ServerCallContext context)
@@ -24,7 +34,7 @@ public class ProxyDistributorService : ProxyDistributor.ProxyDistributorService.
 
         return Task.FromResult(new TakeProxyResponse
         {
-            Proxy = takenProxyWithKey.takenProxy.ToProxyInfo(takenProxyWithKey.releaseKey)
+            Proxy = takenProxyWithKey.Value.ToTakenProxy()
         });
     }
 

@@ -14,7 +14,20 @@ public static class ProxyMapper
             proxyInfo.Password);
     }
 
-    public static ProxyInfo ToProxyInfo(this Proxy proxy, Guid releaseKey)
+    public static TakenProxy ToTakenProxy(this (Proxy proxy, Guid releaseKey) proxyWithKey)
+    {
+        return new TakenProxy
+        {
+            Id = proxyWithKey.proxy.Id,
+            Address = proxyWithKey.proxy.Address,
+            Port = proxyWithKey.proxy.Port,
+            Login = proxyWithKey.proxy.Login,
+            Password = proxyWithKey.proxy.Password,
+            ReleaseKey = proxyWithKey.releaseKey.ToString()
+        };
+    }
+
+    public static ProxyInfo ToProxyInfo(this Proxy proxy)
     {
         return new ProxyInfo
         {
@@ -23,7 +36,7 @@ public static class ProxyMapper
             Port = proxy.Port,
             Login = proxy.Login,
             Password = proxy.Password,
-            ReleaseKey = releaseKey.ToString()
+            IsFree = proxy.IsFree()
         };
     }
 }

@@ -1,5 +1,6 @@
 using DiscordEye.ProxyDistributor.Options;
 using DiscordEye.ProxyDistributor.Services;
+using DiscordEye.ProxyDistributor.Services.ProxyDistributor;
 using DiscordEye.ProxyDistributor.Services.ProxyStorage;
 
 var builder = WebApplication.CreateBuilder(args);

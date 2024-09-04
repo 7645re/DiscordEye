@@ -4,13 +4,22 @@ option csharp_namespace = "DiscordEye.ProxyDistributor";
 
 package proxyDistributor;
 
+message TakenProxy {
+  int32 id = 1;
+  string address = 2;
+  string port = 3;
+  string login = 4;
+  string password = 5;  
+  string release_key = 6;
+}
+
 message ProxyInfo {
   int32 id = 1;
   string address = 2;
   string port = 3;
   string login = 4;
   string password = 5;
-  string release_key = 6;
+  bool is_free = 6;
 }
 
 message TakeProxyRequest {
@@ -18,7 +27,7 @@ message TakeProxyRequest {
 
 message TakeProxyResponse {
   oneof result {
-    ProxyInfo proxy = 1;
+    TakenProxy proxy = 1;
     string error_message = 2;
   }
 }
@@ -35,12 +44,20 @@ message ReleaseProxyResponse {
 
 message ProxyResponse {
   oneof result {
-    ProxyInfo proxy = 1;
+    TakenProxy proxy = 1;
     string error_message = 2;
   }
 }
 
+message GetProxiesRequest {
+}
+
+message GetProxiesResponse {
+  repeated ProxyInfo proxies = 1;
+}
+
 service ProxyDistributorService {
+  rpc GetProxies (GetProxiesRequest) returns (GetProxiesResponse);
   rpc TakeProxy (TakeProxyRequest) returns (TakeProxyResponse);
   rpc ReleaseProxy (ReleaseProxyRequest) returns (ReleaseProxyResponse);
 }

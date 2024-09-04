@@ -26,6 +26,11 @@ public class ProxyStorageService : IProxyStorageService
         _logger.LogInformation($"Proxies were loaded in the amount of {_proxies.Length} pieces");
     }
 
+    public ProxyInfo[] GetProxies()
+    {
+        return _proxies.Select(x => x.ToProxyInfo()).ToArray();
+    }
+    
     public bool TryReleaseProxy(int proxyId, Guid releaseKey)
     {
         var proxy = _proxies
@@ -41,7 +46,7 @@ public class ProxyStorageService : IProxyStorageService
         return true;
     }
 
-    public bool TryTakeProxy(out (Proxy? takenProxy, Guid? releaseKey) takenProxyWithKey)
+    public bool TryTakeProxy(out (Proxy takenProxy, Guid releaseKey)? takenProxyWithKey)
     {
         while (!_proxiesQueue.IsEmpty)
         {
@@ -55,12 +60,12 @@ public class ProxyStorageService : IProxyStorageService
                 continue;
     
             _logger.LogInformation($"Proxy {proxy.Id} was taken");
-            takenProxyWithKey = (proxy, releaseKey);
+            takenProxyWithKey = (proxy, releaseKey.Value);
             return true;
         }
         
         _logger.LogWarning("All proxies were taken");
-        takenProxyWithKey = (null, null);
+        takenProxyWithKey = null;
         return false;
     }
 }
