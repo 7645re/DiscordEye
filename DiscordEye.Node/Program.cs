@@ -52,4 +52,5 @@ builder.Services.AddSingleton<IDiscordEventClient, DiscordEventClient>();
 builder.Services.AddSingleton<IDiscordRequestClient, DiscordRequestClient>();
 var app = builder.Build();
 app.MapGrpcService<DiscordListenerService>();
+app.MapGrpcService<ProxyHeartbeatService>();
 app.Run();

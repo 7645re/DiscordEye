@@ -7,7 +7,8 @@ public class Proxy
     public readonly string Port;
     public readonly string Login;
     public readonly string Password;
-    public string? AddressUsingNodes;
+    public string? TakerAddress;
+    public DateTime? TakenDateTime;
     private Guid? _releaseKey;
     private readonly object _lockObjet = new();
 
@@ -43,7 +44,7 @@ public class Proxy
                 return false;
             }
 
-            AddressUsingNodes = takerAddress;
+            TakerAddress = takerAddress;
             _releaseKey = Guid.NewGuid();
             releaseKey = _releaseKey;
             return true;    
@@ -57,7 +58,7 @@ public class Proxy
             if (IsFree() || _releaseKey!.Value != releaseKey)
                 return false;
 
-            AddressUsingNodes = null;
+            TakerAddress = null;
             _releaseKey = null;
             return true;    
         }
