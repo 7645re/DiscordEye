@@ -1,0 +1,9 @@
+message ProxyHeartbeatRequest {
+}
+
+message ProxyHeartbeatResponse {
+}
+
+service ProxyHeartbeat {
+  rpc Heartbeat(ProxyHeartbeatRequest) returns (ProxyHeartbeatResponse) {}
+}

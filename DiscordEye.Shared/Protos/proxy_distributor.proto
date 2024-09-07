@@ -19,7 +19,8 @@ message ProxyInfo {
   string port = 3;
   string login = 4;
   string password = 5;
-  bool is_free = 6;
+  string node_address = 6;
+  bool is_free = 7;
 }
 
 message TakeProxyRequest {
@@ -40,13 +41,6 @@ message ReleaseProxyRequest {
 message ReleaseProxyResponse {
   bool operation_successful = 1;
   string error_message = 2;
-}
-
-message ProxyResponse {
-  oneof result {
-    TakenProxy proxy = 1;
-    string error_message = 2;
-  }
 }
 
 message GetProxiesRequest {

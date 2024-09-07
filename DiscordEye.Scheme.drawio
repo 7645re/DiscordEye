@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36" version="24.7.10">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36" version="24.7.8">
   <diagram name="Страница — 1" id="CbDkfn1_sOLO_tkXJOBX">
-    <mxGraphModel dx="1434" dy="780" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="795" dy="513" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -83,10 +83,18 @@
         <mxCell id="uYKjjgYTWvOBEUe7Jjzu-33" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" parent="1" source="uYKjjgYTWvOBEUe7Jjzu-22" target="uYKjjgYTWvOBEUe7Jjzu-27" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="uYKjjgYTWvOBEUe7Jjzu-22" value="DiscordEye.ProxyDistributor" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-          <mxGeometry x="90" y="690" width="160" height="50" as="geometry" />
+        <mxCell id="zrRSto9lRzeUWnxxTWXz-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="uYKjjgYTWvOBEUe7Jjzu-22" target="uYKjjgYTWvOBEUe7Jjzu-19">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="uYKjjgYTWvOBEUe7Jjzu-45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.11;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="uYKjjgYTWvOBEUe7Jjzu-19" target="uYKjjgYTWvOBEUe7Jjzu-22" edge="1">
+        <mxCell id="zrRSto9lRzeUWnxxTWXz-2" value="HeartbeatProxy&lt;br&gt;(Grpc)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="zrRSto9lRzeUWnxxTWXz-1">
+          <mxGeometry x="-0.038" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="uYKjjgYTWvOBEUe7Jjzu-22" value="DiscordEye.ProxyDistributor" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="50" y="690" width="240" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="uYKjjgYTWvOBEUe7Jjzu-45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.127;exitY=1.014;exitDx=0;exitDy=0;entryX=0.11;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;exitPerimeter=0;" parent="1" source="uYKjjgYTWvOBEUe7Jjzu-19" target="uYKjjgYTWvOBEUe7Jjzu-22" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="uYKjjgYTWvOBEUe7Jjzu-47" value="TryTakeProxy&lt;br&gt;(Grpc)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="uYKjjgYTWvOBEUe7Jjzu-45" vertex="1" connectable="0">
@@ -94,8 +102,10 @@
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="uYKjjgYTWvOBEUe7Jjzu-46" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.895;entryY=0.032;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="uYKjjgYTWvOBEUe7Jjzu-19" target="uYKjjgYTWvOBEUe7Jjzu-22" edge="1">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="uYKjjgYTWvOBEUe7Jjzu-46" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.895;entryY=0.032;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" target="uYKjjgYTWvOBEUe7Jjzu-22" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="265" y="600" as="sourcePoint" />
+          </mxGeometry>
         </mxCell>
         <mxCell id="uYKjjgYTWvOBEUe7Jjzu-48" value="TryReleaseProxy&lt;br&gt;(Grpc)" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" parent="uYKjjgYTWvOBEUe7Jjzu-46" vertex="1" connectable="0">
           <mxGeometry x="-0.0811" y="1" relative="1" as="geometry">
@@ -153,7 +163,7 @@
         <mxCell id="uYKjjgYTWvOBEUe7Jjzu-29" value="appsettings.json" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="CBDySnnhY-ZLqz9cMj5p-7" vertex="1">
           <mxGeometry x="15" y="140" width="90" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="sKdte7mva0YvpPECTV-F-2" value="TODO:&lt;br&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;1. Notifier Service (User can subscribe on victim&#39;s events and be notified about it by telegram\discord dm)&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;2. Tracking Only Victim (Current we tracking and write to DB all events about all users, need logic for create victim list)&lt;br&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;3. Personal account (Create user personal account, )&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+        <mxCell id="sKdte7mva0YvpPECTV-F-2" value="TODO:&lt;br&gt;&lt;div style=&quot;text-align: left;&quot;&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;1. Notifier Service (User can subscribe on victim&#39;s events and be notified about it by telegram\discord dm)&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;2. Tracking Only Victim (Current we tracking and write to DB all events about all users, need logic for create victim list)&lt;br&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;3. Personal account (Create user personal account, )&lt;/div&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="740" y="440" width="270" height="250" as="geometry" />
         </mxCell>
       </root>

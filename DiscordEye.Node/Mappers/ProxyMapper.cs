@@ -5,11 +5,11 @@ namespace DiscordEye.Node.Mappers;
 
 public static class ProxyMapper
 {
-    public static WebProxy ToWebProxy(this ProxyResponse proxyResponse)
+    public static WebProxy ToWebProxy(this TakeProxyResponse proxyResponse)
     {
         return new WebProxy
         {
-            Address = new Uri($"{proxyResponse.Proxy.Address}:{proxyResponse.Proxy.Port}"),
+            Address = new Uri($"http://{proxyResponse.Proxy.Address}:{proxyResponse.Proxy.Port}"),
             Credentials = new NetworkCredential
             {
                 Password = proxyResponse.Proxy.Password,

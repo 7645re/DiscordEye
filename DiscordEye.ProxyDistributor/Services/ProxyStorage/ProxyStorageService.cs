@@ -46,7 +46,7 @@ public class ProxyStorageService : IProxyStorageService
         return true;
     }
 
-    public bool TryTakeProxy(out (Proxy takenProxy, Guid releaseKey)? takenProxyWithKey)
+    public bool TryTakeProxy(string nodeAddress, out (Proxy takenProxy, Guid releaseKey)? takenProxyWithKey)
     {
         while (!_proxiesQueue.IsEmpty)
         {
@@ -56,7 +56,7 @@ public class ProxyStorageService : IProxyStorageService
             if (!proxy.IsFree())
                 throw new InvalidOperationException($"Proxy {proxy.Id} is not free, but should be");
 
-            if (!proxy.TryTake(out var releaseKey))
+            if (!proxy.TryTake(nodeAddress, out var releaseKey))
                 continue;
     
             _logger.LogInformation($"Proxy {proxy.Id} was taken");

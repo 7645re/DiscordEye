@@ -19,7 +19,7 @@ public class DiscordFacadeBackgroundService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await _discordEventClient.InitClientAsync();
+        // await _discordEventClient.InitClientAsync();
         await _discordRequestClient.InitClientAsync();
     }
 

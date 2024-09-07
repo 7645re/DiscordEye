@@ -19,6 +19,16 @@ public class DiscordListenerService : DiscordListener.DiscordListener.DiscordLis
         // TODO: maybe set background service to field from service provider
         var discordFacade = _serviceProvider.GetHostedService<DiscordFacadeBackgroundService>();
         var discordUser = await discordFacade.GetUserAsync(request.UserId);
-        return discordUser.ToDiscordUserGrpcResponse();
+        
+        if (discordUser == null)
+            return new DiscordUserGrpcResponse
+            {
+                ErrorMessage = "User not found"
+            };
+
+        return new DiscordUserGrpcResponse
+        {
+            User = discordUser.ToDiscordUserGrpc(),
+        };
     }
 }

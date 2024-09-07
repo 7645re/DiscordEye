@@ -7,6 +7,7 @@ public class Proxy
     public readonly string Port;
     public readonly string Login;
     public readonly string Password;
+    public string? AddressUsingNodes;
     private Guid? _releaseKey;
     private readonly object _lockObjet = new();
 
@@ -29,8 +30,11 @@ public class Proxy
         return _releaseKey is null;
     }
 
-    public bool TryTake(out Guid? releaseKey)
+    public bool TryTake(string takerAddress, out Guid? releaseKey)
     {
+        if (string.IsNullOrEmpty(takerAddress))
+            throw new ArgumentException("Taker address cannot be null or empty");
+        
         lock (_lockObjet)
         {
             if (!IsFree())
@@ -39,6 +43,7 @@ public class Proxy
                 return false;
             }
 
+            AddressUsingNodes = takerAddress;
             _releaseKey = Guid.NewGuid();
             releaseKey = _releaseKey;
             return true;    
@@ -52,6 +57,7 @@ public class Proxy
             if (IsFree() || _releaseKey!.Value != releaseKey)
                 return false;
 
+            AddressUsingNodes = null;
             _releaseKey = null;
             return true;    
         }

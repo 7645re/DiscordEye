@@ -10,25 +10,46 @@ enum DiscordChannelTypeResponse {
   CATEGORY_CHANNEL = 2;
 }
 
-message DiscordChannelResponse {
+message DiscordChannelGrpc {
   string id = 1;
   string name = 2;
   DiscordChannelTypeResponse type = 3;
+} 
+
+message DiscordChannelGrpcResponse {
+  oneof result {
+    DiscordChannelGrpc channel = 1;
+    string error_message = 2;
+  } 
 }
 
-message DiscordGuildGrpcResponse {
+message DiscordGuildGrpc {
   string id = 1;
   string icon_url = 2;
   string name = 3;
   string owner_id = 4;
   int32 member_count = 5;
-  repeated DiscordChannelResponse channels = 6;
+  repeated DiscordChannelGrpc channels = 6;
 }
 
-message DiscordUserGrpcResponse {
+message DiscordGuildGrpcResponse {
+  oneof result {
+    DiscordGuildGrpc guild = 1;
+    string error_message = 2;
+  }
+}
+
+message DiscordUserGrpc {
   uint64 id = 1;
   string username = 2;
   repeated DiscordGuildGrpcResponse guilds = 3;
+}
+
+message DiscordUserGrpcResponse {
+  oneof result{
+    DiscordUserGrpc user = 1;
+    string error_message = 2;
+  }
 }
 
 message DiscordUserGrpcRequest {

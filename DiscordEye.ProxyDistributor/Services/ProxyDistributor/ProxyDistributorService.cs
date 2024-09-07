@@ -25,7 +25,15 @@ public class ProxyDistributorService
 
     public override Task<TakeProxyResponse> TakeProxy(TakeProxyRequest request, ServerCallContext context)
     {
-        if (!_proxyStorageService.TryTakeProxy(out var takenProxyWithKey))
+        var nodeAddress = context.GetHttpContext().Connection.RemoteIpAddress?.ToString();
+        if (nodeAddress is null)
+            return Task.FromResult(new TakeProxyResponse
+            {
+                Proxy = null,
+                ErrorMessage = "Failed to get node address"
+            });
+        
+        if (!_proxyStorageService.TryTakeProxy(nodeAddress, out var takenProxyWithKey))
             return Task.FromResult(new TakeProxyResponse
             {
                 Proxy = null,

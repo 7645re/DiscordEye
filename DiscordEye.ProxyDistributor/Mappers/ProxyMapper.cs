@@ -36,6 +36,7 @@ public static class ProxyMapper
             Port = proxy.Port,
             Login = proxy.Login,
             Password = proxy.Password,
+            NodeAddress = proxy.AddressUsingNodes ?? string.Empty,
             IsFree = proxy.IsFree()
         };
     }
