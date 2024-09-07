@@ -31,4 +31,21 @@ public class DiscordListenerService : DiscordListener.DiscordListener.DiscordLis
             User = discordUser.ToDiscordUserGrpc(),
         };
     }
+
+    public override async Task<DiscordGuildGrpcResponse> GetGuild(DiscordGuildGrpcRequest request, ServerCallContext context)
+    {
+        var discordFacade = _serviceProvider.GetHostedService<DiscordFacadeBackgroundService>();
+        var discordGuild = await discordFacade.GetGuildAsync(request.GuildId);
+        
+        if (discordGuild == null)
+            return new DiscordGuildGrpcResponse
+            {
+                ErrorMessage = "Guild not found"
+            };
+
+        return new DiscordGuildGrpcResponse
+        {
+            Guild = discordGuild.ToDiscordGuildGrpc()
+        };
+    }
 }

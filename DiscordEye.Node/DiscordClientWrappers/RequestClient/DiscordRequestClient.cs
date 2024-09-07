@@ -39,7 +39,9 @@ public class DiscordRequestClient : IDiscordRequestClient
         };
 
         if (webProxy is not null)
-            discordSocketConfig.RestClientProvider = DefaultRestClientProvider.Create(webProxy: webProxy);
+            discordSocketConfig.RestClientProvider = DefaultRestClientProvider.Create(
+                webProxy: webProxy,
+                useProxy: true);
 
         var client = new DiscordSocketClient(discordSocketConfig);
         await client.LoginAsync(TokenType.User, _options.Token);
@@ -54,17 +56,28 @@ public class DiscordRequestClient : IDiscordRequestClient
             throw new ArgumentException($"{nameof(DiscordSocketClient)} not initialize");
     }
     
-    public async Task<DiscordUser> GetUserAsync(ulong id)
+    public async Task<DiscordUser?> GetUserAsync(ulong id)
     {
         return await RetryOnFailureUseProxyAsync(async () =>
         {
             ThrowIfClientNotInitialized();
             var userProfile = await _client?.Rest.GetUserProfileAsync(id);
-            return userProfile.ToDiscordUser();
+            return userProfile?.ToDiscordUser();
+        }, retryCount: 2);
+    }
+
+    // TODO: sync execution in task [refactor]
+    public async Task<DiscordGuild?> GetGuildAsync(ulong id)
+    {
+        return await RetryOnFailureUseProxyAsync(() =>
+        {
+            ThrowIfClientNotInitialized();
+            var guild = _client?.GetGuild(id);
+            return Task.FromResult(guild?.ToDiscordGuild());
         });
     }
 
-    public async Task<WebProxy?> TakeProxyInLoopAsync(
+    private async Task<WebProxy?> TakeProxyInLoopAsync(
         int retryCount = 0,
         int millisecondsDelay = 0)
     {
@@ -82,8 +95,8 @@ public class DiscordRequestClient : IDiscordRequestClient
 
         return null;
     }
-    
-    public async Task<T?> RetryOnFailureUseProxyAsync<T>(
+
+    private async Task<T?> RetryOnFailureUseProxyAsync<T>(
         Func<Task<T>> action,
         int retryCount = 1,
         int millisecondDelay = 0)
@@ -93,7 +106,7 @@ public class DiscordRequestClient : IDiscordRequestClient
         {
             try
             {
-                return await ExecuteInSemaphoreWithoutExceptionAsync(async () => await action());
+                return await ExecuteInClientSemaphoreAsync(async () => await action());
             }
             catch (CloudFlareException e)
             {
@@ -101,7 +114,8 @@ public class DiscordRequestClient : IDiscordRequestClient
                 if (proxy is null)
                     continue;
 
-                await ExecuteInSemaphoreWithoutExceptionAsync(async () =>
+                _logger.LogInformation("Proxy taken: {Proxy}", proxy);
+                await ExecuteInClientSemaphoreAsync(async () =>
                 {
                     if (_client != null)
                     {
@@ -109,6 +123,7 @@ public class DiscordRequestClient : IDiscordRequestClient
                         await _client.DisposeAsync();
                     }
                     _client = await InitClientAsync(proxy);
+                    _logger.LogInformation("Reinitialize client with proxy complete");
                     return Task.CompletedTask;
                 });
             }
@@ -117,19 +132,10 @@ public class DiscordRequestClient : IDiscordRequestClient
             counter++;
         }
 
-        if (_client is null)
-        {
-            await ExecuteInSemaphoreWithoutExceptionAsync(async () =>
-            {
-                _client = await InitClientAsync();
-                return Task.CompletedTask;
-            });
-        }
-        
         return default;
     }
     
-    private async Task<T> ExecuteInSemaphoreWithoutExceptionAsync<T>(Func<Task<T>> action)
+    private async Task<T> ExecuteInClientSemaphoreAsync<T>(Func<Task<T>> action)
     {
         Exception? exception;
         await _clientSemaphore.WaitAsync();

@@ -4,7 +4,7 @@ option csharp_namespace = "DiscordEye.DiscordListener";
 
 package discordListener;
 
-enum DiscordChannelTypeResponse {
+enum DiscordChannelTypeGrpc {
   TEXT_CHANNEL = 0;
   VOICE_CHANNEL = 1;
   CATEGORY_CHANNEL = 2;
@@ -13,7 +13,7 @@ enum DiscordChannelTypeResponse {
 message DiscordChannelGrpc {
   string id = 1;
   string name = 2;
-  DiscordChannelTypeResponse type = 3;
+  DiscordChannelTypeGrpc type = 3;
 } 
 
 message DiscordChannelGrpcResponse {
@@ -46,7 +46,7 @@ message DiscordUserGrpc {
 }
 
 message DiscordUserGrpcResponse {
-  oneof result{
+  oneof result {
     DiscordUserGrpc user = 1;
     string error_message = 2;
   }
