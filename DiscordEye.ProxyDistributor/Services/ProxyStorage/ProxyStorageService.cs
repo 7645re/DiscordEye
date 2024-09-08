@@ -1,7 +1,9 @@
 using System.Collections.Concurrent;
+using DiscordEye.ProxyDistributor.BackgroundServices;
 using DiscordEye.ProxyDistributor.Dto;
 using DiscordEye.ProxyDistributor.Mappers;
 using DiscordEye.ProxyDistributor.Options;
+using DiscordEye.Shared.Extensions;
 using Microsoft.Extensions.Options;
 
 namespace DiscordEye.ProxyDistributor.Services.ProxyStorage;
@@ -11,12 +13,15 @@ public class ProxyStorageService : IProxyStorageService
     private readonly Proxy[] _proxies;
     private readonly ConcurrentQueue<Proxy> _proxiesQueue;
     private readonly ILogger<ProxyStorageService> _logger;
+    private readonly IServiceProvider _serviceProvider;
     
     public ProxyStorageService(
         IOptions<ProxiesOptions> proxiesOptions,
-        ILogger<ProxyStorageService> logger)
+        ILogger<ProxyStorageService> logger,
+        IServiceProvider serviceProvider)
     {
         _logger = logger;
+        _serviceProvider = serviceProvider;
         _proxies = proxiesOptions
             .Value
             .Proxies
@@ -60,6 +65,25 @@ public class ProxyStorageService : IProxyStorageService
                 continue;
     
             _logger.LogInformation($"Proxy {proxy.Id} was taken");
+            var heartbeatService = _serviceProvider.GetHostedService<ProxyHeartbeatBackgroundService>();
+            if (heartbeatService is null)
+            {
+                _logger.LogWarning("Heartbeat service was not found");
+                takenProxyWithKey = null;
+                return false;
+            }
+            
+            if (!heartbeatService.TryRegisterProxy(proxy))
+            {
+                _logger.LogWarning($"Proxy {proxy.Id} was not registered to heartbeat service");
+                if (releaseKey is not null && !proxy.TryRelease(releaseKey.Value))
+                {
+                    throw new InvalidOperationException($"Proxy {proxy.Id} was not released after heartbeat failure");
+                }
+                _proxiesQueue.Enqueue(proxy);
+                takenProxyWithKey = null;
+                return false;
+            }
             takenProxyWithKey = (proxy, releaseKey.Value);
             return true;
         }
@@ -67,5 +91,17 @@ public class ProxyStorageService : IProxyStorageService
         _logger.LogWarning("All proxies were taken");
         takenProxyWithKey = null;
         return false;
+    }
+
+    public bool TryForceReleaseProxy(int id)
+    {
+        var proxy = _proxies.SingleOrDefault(x => x.Id == id);
+        if (proxy is null)
+            throw new ArgumentNullException($"Proxy with id {id} doesnt exist");
+
+        if (proxy.TryForceRelease()) return true;
+        _logger.LogInformation($"Cannot force release proxy with id {proxy.Id}");
+        return false;
+
     }
 }

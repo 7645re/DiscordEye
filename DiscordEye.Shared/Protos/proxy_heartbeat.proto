@@ -1,7 +1,14 @@
+syntax = "proto3";
+
+option csharp_namespace = "DiscordEye.ProxyDistributor";
+
+package proxyDistributor;
+
 message ProxyHeartbeatRequest {
 }
 
 message ProxyHeartbeatResponse {
+  string release_key = 1;
 }
 
 service ProxyHeartbeat {

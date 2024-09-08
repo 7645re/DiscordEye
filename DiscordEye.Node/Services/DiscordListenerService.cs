@@ -1,6 +1,7 @@
 using DiscordEye.DiscordListener;
 using DiscordEye.Node.BackgroundServices;
 using DiscordEye.Node.Mappers;
+using DiscordEye.Shared.Extensions;
 using Grpc.Core;
 
 namespace DiscordEye.Node.Services;
@@ -28,7 +29,7 @@ public class DiscordListenerService : DiscordListener.DiscordListener.DiscordLis
 
         return new DiscordUserGrpcResponse
         {
-            User = discordUser.ToDiscordUserGrpc(),
+            User = discordUser.ToDiscordUserGrpc()
         };
     }
 

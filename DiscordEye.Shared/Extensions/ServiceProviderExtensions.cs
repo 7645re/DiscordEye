@@ -1,4 +1,7 @@
-namespace DiscordEye.Node;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
+namespace DiscordEye.Shared.Extensions;
 
 public static class ServiceProviderExtensions
 {

@@ -28,9 +28,26 @@ public class Proxy
 
     public bool IsFree()
     {
-        return _releaseKey is null;
+        return _releaseKey is null
+               && TakerAddress is null
+               && TakenDateTime is null;
     }
 
+    public bool TryProlong(Guid releaseKey, TimeSpan prolongTime)
+    {
+        lock (_lockObjet)
+        {
+            if (IsFree())
+                return false;
+            
+            if (!EqualsReleaseKey(releaseKey))
+                return false;
+
+            TakenDateTime += prolongTime;
+            return true;
+        }
+    }
+    
     public bool TryTake(string takerAddress, out Guid? releaseKey)
     {
         if (string.IsNullOrEmpty(takerAddress))
@@ -46,6 +63,7 @@ public class Proxy
 
             TakerAddress = takerAddress;
             _releaseKey = Guid.NewGuid();
+            TakenDateTime = DateTime.Now;
             releaseKey = _releaseKey;
             return true;    
         }
@@ -60,7 +78,32 @@ public class Proxy
 
             TakerAddress = null;
             _releaseKey = null;
+            TakenDateTime = null;
             return true;    
         }
+    }
+
+    /// <summary>
+    /// This method should only be used if the node that occupied
+    /// the proxy did not respond to the heartbeat
+    /// </summary>
+    /// <returns></returns>
+    public bool TryForceRelease()
+    {
+        lock (_lockObjet)
+        {
+            if (IsFree())
+                return false;
+
+            TakerAddress = null;
+            _releaseKey = null;
+            TakenDateTime = null;
+            return true;
+        }
+    }
+
+    public bool EqualsReleaseKey(Guid releaseKey)
+    {
+        return _releaseKey == releaseKey;
     }
 }

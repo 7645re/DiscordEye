@@ -19,6 +19,7 @@ public class DiscordRequestClient : IDiscordRequestClient
     private readonly ProxyDistributorService.ProxyDistributorServiceClient _proxyDistributorService;
     private readonly DiscordOptions _options;
     private readonly SemaphoreSlim _clientSemaphore = new(1,1);
+    private Proxy? _takenProxy;
 
     public DiscordRequestClient(
         ILogger<DiscordRequestClient> logger,
@@ -77,16 +78,25 @@ public class DiscordRequestClient : IDiscordRequestClient
         });
     }
 
-    private async Task<WebProxy?> TakeProxyInLoopAsync(
+    private async Task<TakenProxy?> TakeProxyInLoopAsync(
         int retryCount = 0,
         int millisecondsDelay = 0)
     {
         var counter = 0;
         while (counter < retryCount)
         {
-            var webProxyResponse = await _proxyDistributorService.TakeProxyAsync(new TakeProxyRequest());
-            if (webProxyResponse.Proxy is not null)
-                return webProxyResponse.ToWebProxy();
+            TakeProxyResponse? webProxyResponse = null; 
+            try
+            {
+                webProxyResponse = await _proxyDistributorService.TakeProxyAsync(new TakeProxyRequest());
+            }
+            catch (Exception e)
+            {
+                _logger.LogInformation($"Can't call grpc proxy distributor service");
+            }
+
+            if (webProxyResponse?.Proxy is not null)
+                return webProxyResponse.Proxy;
 
             counter++;
             if (millisecondsDelay == 0) continue;
@@ -104,6 +114,7 @@ public class DiscordRequestClient : IDiscordRequestClient
         var counter = 0;
         while (counter < retryCount)
         {
+            counter++;
             try
             {
                 return await ExecuteInClientSemaphoreAsync(async () => await action());
@@ -122,20 +133,20 @@ public class DiscordRequestClient : IDiscordRequestClient
                         await _client.LogoutAsync();
                         await _client.DisposeAsync();
                     }
-                    _client = await InitClientAsync(proxy);
+                    _client = await InitClientAsync(proxy.ToWebProxy());
+                    _takenProxy = proxy.ToProxy();
                     _logger.LogInformation("Reinitialize client with proxy complete");
                     return Task.CompletedTask;
                 });
             }
 
             await Task.Delay(millisecondDelay);
-            counter++;
         }
 
         return default;
     }
     
-    private async Task<T> ExecuteInClientSemaphoreAsync<T>(Func<Task<T>> action)
+    private async Task<T?> ExecuteInClientSemaphoreAsync<T>(Func<Task<T>> action)
     {
         Exception? exception;
         await _clientSemaphore.WaitAsync();
@@ -152,6 +163,21 @@ public class DiscordRequestClient : IDiscordRequestClient
             _clientSemaphore.Release();
         }
 
-        throw exception;
+        if (exception is not null)
+            throw exception;
+
+        return default;
+    }
+    
+    public bool TryGetReleaseKey(out Guid? releaseKey)
+    {
+        if (_takenProxy?.ReleaseKey is null)
+        {
+            releaseKey = null;
+            return false;
+        }
+
+        releaseKey = _takenProxy.ReleaseKey;
+        return true;
     }
 }
