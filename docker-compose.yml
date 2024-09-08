@@ -3,6 +3,19 @@
     driver: bridge
 
 services:
+  vault:
+    image: hashicorp/vault:latest
+    container_name: vault
+    ports:
+      - "8200:8200"
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "root-token"
+      VAULT_ADDR: "http://0.0.0.0:8200"
+    volumes:
+      - ./vault/data:/vault/file
+    cap_add:
+      - IPC_LOCK
+    command: server -dev -dev-root-token-id=root-token
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     container_name: zookeeper

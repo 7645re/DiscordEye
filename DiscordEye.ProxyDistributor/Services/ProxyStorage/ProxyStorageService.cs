@@ -2,9 +2,8 @@ using System.Collections.Concurrent;
 using DiscordEye.ProxyDistributor.BackgroundServices;
 using DiscordEye.ProxyDistributor.Dto;
 using DiscordEye.ProxyDistributor.Mappers;
-using DiscordEye.ProxyDistributor.Options;
+using DiscordEye.ProxyDistributor.Services.ProxyVault;
 using DiscordEye.Shared.Extensions;
-using Microsoft.Extensions.Options;
 
 namespace DiscordEye.ProxyDistributor.Services.ProxyStorage;
 
@@ -14,17 +13,19 @@ public class ProxyStorageService : IProxyStorageService
     private readonly ConcurrentQueue<Proxy> _proxiesQueue;
     private readonly ILogger<ProxyStorageService> _logger;
     private readonly IServiceProvider _serviceProvider;
-    
+
     public ProxyStorageService(
-        IOptions<ProxiesOptions> proxiesOptions,
         ILogger<ProxyStorageService> logger,
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider,
+        IProxyVaultService proxyVaultService)
     {
+        // TODO: .GetAwaiter().GetResult() block thread
         _logger = logger;
         _serviceProvider = serviceProvider;
-        _proxies = proxiesOptions
-            .Value
-            .Proxies
+        _proxies = proxyVaultService
+            .GetAllProxiesAsync()
+            .GetAwaiter()
+            .GetResult()
             .Select(x => x.ToProxy())
             .ToArray();
         _proxiesQueue = new ConcurrentQueue<Proxy>(_proxies);
@@ -78,7 +79,8 @@ public class ProxyStorageService : IProxyStorageService
                 _logger.LogWarning($"Proxy {proxy.Id} was not registered to heartbeat service");
                 if (releaseKey is not null && !proxy.TryRelease(releaseKey.Value))
                 {
-                    throw new InvalidOperationException($"Proxy {proxy.Id} was not released after heartbeat failure");
+                    throw new InvalidOperationException($"Proxy {proxy.Id} was not released " +
+                                                        $"after heartbeat failure");
                 }
                 _proxiesQueue.Enqueue(proxy);
                 takenProxyWithKey = null;

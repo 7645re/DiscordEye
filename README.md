@@ -5,7 +5,7 @@ which is located in the project root folder. After updating you need to save
 file in your pull request to keep the schema up to date, and also update the
 screenshot in README.md.
 
-![img.png](img.png)
+![img_1.png](img_1.png)
 
 # First launch
 For the first launch you will need installed packages 
@@ -29,12 +29,20 @@ The library does not have the necessary functionality. For now, the forked libra
 To download and connect, contact the author of the project.
 
 ### DiscordEye.ProxyDistributor
-1. It is necessary to pass several proxies to the `appsettings` file so that the application can 
-operate with something.
+1. You need to raise a docker container with Hashicorp Vault and you need to load at least one proxy into the database.
 
 ### DiscordEye.EventsAggregator
 1. You need to run `zookeper` & `kafka broker` using `docker-compose.yml` in the repository root.
 2. For some HTTP requests it will be necessary to run at least one `DiscordEye.Node` node.
+
+### Hashicorp Vault
+1. It was decided to use KV storage to store data about proxy servers, as well as
+discord tokens for nodes will be stored there.
+
+To enter data into the database, you need to go to `Docker Desktop` -> `vault container` -> `Exec` and enter the commands:
+1. To add data `vault kv put secret/proxy/1 address="1.1.1.1" port="1" login="1" password="1"`
+2. To view the data `vault kv get secret/proxy/1`
+3. To delete data `vault kv delete secret/proxy/1`
 
 ### DiscordEye.Frontend
 1. Coming soon

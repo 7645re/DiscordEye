@@ -4,14 +4,14 @@ namespace DiscordEye.ProxyDistributor.Mappers;
 
 public static class ProxyMapper
 {
-    public static Proxy ToProxy(this Options.ProxyInfo proxyInfo)
+    public static Proxy ToProxy(this ProxyInfo proxy)
     {
         return new Proxy(
-            proxyInfo.Id,
-            proxyInfo.Address,
-            proxyInfo.Port,
-            proxyInfo.Login,
-            proxyInfo.Password);
+            proxy.Id,
+            proxy.Address,
+            proxy.Port,
+            proxy.Login,
+            proxy.Password);
     }
 
     public static TakenProxy ToTakenProxy(this (Proxy proxy, Guid releaseKey) proxyWithKey)
