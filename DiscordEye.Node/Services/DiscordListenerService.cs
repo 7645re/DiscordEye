@@ -9,18 +9,26 @@ namespace DiscordEye.Node.Services;
 public class DiscordListenerService : DiscordListener.DiscordListener.DiscordListenerBase
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
-    public DiscordListenerService(IServiceProvider serviceProvider)
+    public DiscordListenerService(IServiceProvider serviceProvider, IHttpContextAccessor httpContextAccessor)
     {
         _serviceProvider = serviceProvider;
+        _httpContextAccessor = httpContextAccessor;
     }
     
     public override async Task<DiscordUserGrpcResponse> GetUser(DiscordUserGrpcRequest request, ServerCallContext context)
     {
         // TODO: maybe set background service to field from service provider
+        var remoteIpAddress = _httpContextAccessor.HttpContext.Connection.LocalIpAddress?.ToString();
+        var remotePort = _httpContextAccessor.HttpContext.Connection.LocalPort;
         var discordFacade = _serviceProvider.GetHostedService<DiscordFacadeBackgroundService>();
         var discordUser = await discordFacade.GetUserAsync(request.UserId);
         
+
+        var headers = context.ResponseTrailers;
+        headers.Add("X-Server-IP", remoteIpAddress);
+        headers.Add("X-Server-Port", remotePort.ToString());
         if (discordUser == null)
             return new DiscordUserGrpcResponse
             {

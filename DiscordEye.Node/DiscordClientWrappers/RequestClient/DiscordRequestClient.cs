@@ -7,7 +7,6 @@ using DiscordEye.Node.Dto;
 using DiscordEye.Node.Mappers;
 using DiscordEye.Node.Options;
 using DiscordEye.ProxyDistributor;
-using MassTransit.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace DiscordEye.Node.DiscordClientWrappers.RequestClient;

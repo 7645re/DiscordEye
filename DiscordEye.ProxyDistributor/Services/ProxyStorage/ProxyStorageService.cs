@@ -1,8 +1,8 @@
 using System.Collections.Concurrent;
 using DiscordEye.ProxyDistributor.BackgroundServices;
+using DiscordEye.ProxyDistributor.Data;
 using DiscordEye.ProxyDistributor.Dto;
 using DiscordEye.ProxyDistributor.Mappers;
-using DiscordEye.ProxyDistributor.Services.ProxyVault;
 using DiscordEye.Shared.Extensions;
 
 namespace DiscordEye.ProxyDistributor.Services.ProxyStorage;
@@ -15,26 +15,20 @@ public class ProxyStorageService : IProxyStorageService
     private readonly IServiceProvider _serviceProvider;
 
     public ProxyStorageService(
+        Proxy[] proxies,
         ILogger<ProxyStorageService> logger,
-        IServiceProvider serviceProvider,
-        IProxyVaultService proxyVaultService)
+        IServiceProvider serviceProvider)
     {
-        // TODO: .GetAwaiter().GetResult() block thread
+        _proxies = proxies;
+        _proxiesQueue = new ConcurrentQueue<Proxy>(_proxies);
         _logger = logger;
         _serviceProvider = serviceProvider;
-        _proxies = proxyVaultService
-            .GetAllProxiesAsync()
-            .GetAwaiter()
-            .GetResult()
-            .Select(x => x.ToProxy())
-            .ToArray();
-        _proxiesQueue = new ConcurrentQueue<Proxy>(_proxies);
         _logger.LogInformation($"Proxies were loaded in the amount of {_proxies.Length} pieces");
     }
 
-    public ProxyInfo[] GetProxies()
+    public ProxyDto[] GetProxies()
     {
-        return _proxies.Select(x => x.ToProxyInfo()).ToArray();
+        return _proxies.Select(x => x.ToProxyDto()).ToArray();
     }
     
     public bool TryReleaseProxy(int proxyId, Guid releaseKey)

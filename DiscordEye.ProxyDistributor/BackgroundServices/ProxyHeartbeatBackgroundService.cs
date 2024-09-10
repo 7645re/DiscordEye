@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using DiscordEye.ProxyDistributor.Data;
 using DiscordEye.ProxyDistributor.Dto;
 using DiscordEye.ProxyDistributor.Services.ProxyStorage;
 using Grpc.Core;
@@ -48,39 +49,42 @@ public class ProxyHeartbeatBackgroundService : BackgroundService
         {
             while (!_takenProxies.IsEmpty)
             {
-                if (!_takenProxies.TryDequeue(out var proxy))
-                    continue;
-            
-                if (proxy.IsFree())
+                if (!_takenProxies.TryDequeue(out var proxy) 
+                    || proxy.IsFree()
+                    || proxy.TakerAddress is null
+                    || proxy.TakenDateTime is null)
                     continue;
 
-                if (proxy.TakenDateTime is not null
-                    && DateTime.Now.Subtract(proxy.TakenDateTime.Value) >= _heartbeatPeriod)
+                if (DateTime.Now.Subtract(proxy.TakenDateTime.Value) < _heartbeatPeriod)
                 {
-                    var result = await HeartbeatToTakerAsync(proxy);
-                    if (result.heartbeatResult)
+                    _takenProxies.Enqueue(proxy);
+                    continue;                    
+                }
+
+                var result = await HeartbeatToTakerAsync(proxy);
+                if (result.heartbeatResult)
+                {
+                    _logger.LogInformation($"Success heartbeat to node {proxy.TakerAddress}" +
+                                           $"for proxy with id {proxy.Id}");
+                    if (proxy.TryProlong(result.releaseKey.Value, _heartbeatPeriod))
                     {
-                        _logger.LogInformation($"Success heartbeat to node {proxy.TakerAddress}" +
-                                               $"for proxy with id {proxy.Id}");
-                        if (proxy.TryProlong(result.releaseKey.Value, _heartbeatPeriod))
-                        {
-                            _logger.LogInformation($"Prolonged proxy with id {proxy.Id}");
-                            _takenProxies.Enqueue(proxy);
-                        }
-                        else
-                        {
-                            _logger.LogWarning($"Can't prolong proxy with id {proxy.Id}");
-                        }
+                        _logger.LogInformation($"Prolonged proxy with id {proxy.Id}");
+                        _takenProxies.Enqueue(proxy);
                     }
                     else
                     {
-                        _logger.LogWarning($"Failed heartbeat to node {proxy.TakerAddress}");
-                        if (_proxyStorageService.TryForceReleaseProxy(proxy.Id))
-                            _logger.LogInformation($"Force released proxy with id {proxy.Id}," +
-                                                   $" because node {proxy.TakerAddress} dont answer to heartbeat");
-                        else
-                            _logger.LogWarning($"Can't force release proxy with id {proxy.Id}");   
+                        _logger.LogWarning($"Can't prolong proxy with id {proxy.Id}");
                     }
+                }
+                else
+                {
+                    var takerAddress = proxy.TakerAddress;
+                    _logger.LogWarning($"Failed heartbeat to node {takerAddress}");
+                    if (_proxyStorageService.TryForceReleaseProxy(proxy.Id))
+                        _logger.LogInformation($"Force released proxy with id {proxy.Id}," +
+                                               $" because node {takerAddress} dont answer to heartbeat");
+                    else
+                        _logger.LogWarning($"Can't force release proxy with id {proxy.Id}");   
                 }
             }
             await Task.Delay(_proxiesAvailableCheckPeriod, cancellationToken);
@@ -92,7 +96,7 @@ public class ProxyHeartbeatBackgroundService : BackgroundService
         (bool heartbeatResult, Guid? releaseKey) result = (false, null);
         
         // TODO: validate node address by regex
-        using var channel = GrpcChannel.ForAddress($"{proxy.TakerAddress}");
+        using var channel = GrpcChannel.ForAddress($"http://{proxy.TakerAddress}");
         var client = new ProxyHeartbeat.ProxyHeartbeatClient(channel);
         try
         {

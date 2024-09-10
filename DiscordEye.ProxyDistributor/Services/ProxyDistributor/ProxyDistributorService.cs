@@ -19,7 +19,7 @@ public class ProxyDistributorService
         var proxies = _proxyStorageService.GetProxies();
         return Task.FromResult(new GetProxiesResponse
         {
-            Proxies = { proxies }
+            Proxies = { proxies.Select(x => x.ToProxyGrpc()) }
         });
     }
 

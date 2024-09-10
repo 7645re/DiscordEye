@@ -1,4 +1,4 @@
-namespace DiscordEye.ProxyDistributor.Dto;
+namespace DiscordEye.ProxyDistributor.Data;
 
 public class Proxy
 {
