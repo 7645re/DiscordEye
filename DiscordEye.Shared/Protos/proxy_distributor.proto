@@ -13,17 +13,18 @@ message TakenProxy {
   string release_key = 6;
 }
 
-message ProxyInfo {
+message ProxyGrpc {
   int32 id = 1;
   string address = 2;
   string port = 3;
   string login = 4;
   string password = 5;
-  string node_address = 6;
+  string taker_address = 6;
   bool is_free = 7;
 }
 
 message TakeProxyRequest {
+  string node_address = 1;
 }
 
 message TakeProxyResponse {
@@ -47,7 +48,7 @@ message GetProxiesRequest {
 }
 
 message GetProxiesResponse {
-  repeated ProxyInfo proxies = 1;
+  repeated ProxyGrpc proxies = 1;
 }
 
 service ProxyDistributorService {

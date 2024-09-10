@@ -5,10 +5,8 @@ using Discord.Net.Rest;
 using Discord.WebSocket;
 using DiscordEye.Node.Dto;
 using DiscordEye.Node.Mappers;
-using DiscordEye.Node.Options;
 using DiscordEye.ProxyDistributor;
-using MassTransit.Configuration;
-using Microsoft.Extensions.Options;
+using DiscordEye.Shared.Extensions;
 
 namespace DiscordEye.Node.DiscordClientWrappers.RequestClient;
 
@@ -17,18 +15,19 @@ public class DiscordRequestClient : IDiscordRequestClient
     private readonly ILogger<DiscordRequestClient> _logger;
     private DiscordSocketClient? _client;
     private readonly ProxyDistributorService.ProxyDistributorServiceClient _proxyDistributorService;
-    private readonly DiscordOptions _options;
     private readonly SemaphoreSlim _clientSemaphore = new(1,1);
     private Proxy? _takenProxy;
+    private readonly string _port;
+    private readonly string _token;
 
     public DiscordRequestClient(
         ILogger<DiscordRequestClient> logger,
-        ProxyDistributorService.ProxyDistributorServiceClient proxyDistributorService,
-        IOptions<DiscordOptions> options)
+        ProxyDistributorService.ProxyDistributorServiceClient proxyDistributorService)
     {
+        _token = StartupExtensions.GetDiscordTokenFromEnvironment();
+        _port = StartupExtensions.GetPort();
         _logger = logger;
         _proxyDistributorService = proxyDistributorService;
-        _options = options.Value;
         _client = InitClientAsync().GetAwaiter().GetResult();
     }
 
@@ -45,7 +44,7 @@ public class DiscordRequestClient : IDiscordRequestClient
                 useProxy: true);
 
         var client = new DiscordSocketClient(discordSocketConfig);
-        await client.LoginAsync(TokenType.User, _options.Token);
+        await client.LoginAsync(TokenType.User, _token);
         await client.StartAsync();
         _logger.LogInformation($"{nameof(DiscordRequestClient)} complete started");
         return client;
@@ -88,7 +87,10 @@ public class DiscordRequestClient : IDiscordRequestClient
             TakeProxyResponse? webProxyResponse = null; 
             try
             {
-                webProxyResponse = await _proxyDistributorService.TakeProxyAsync(new TakeProxyRequest());
+                webProxyResponse = await _proxyDistributorService.TakeProxyAsync(new TakeProxyRequest
+                {
+                    NodeAddress = $"localhost:{_port}"
+                });
             }
             catch (Exception e)
             {

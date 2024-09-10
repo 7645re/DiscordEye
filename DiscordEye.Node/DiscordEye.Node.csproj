@@ -4,6 +4,7 @@
         <TargetFramework>net8.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
 
     <ItemGroup>
@@ -50,26 +51,32 @@
     </ItemGroup>
     
     <ItemGroup>
+      <Content Include="..\.dockerignore">
+        <Link>.dockerignore</Link>
+      </Content>
+    </ItemGroup>
+    
+    <ItemGroup>
       <Reference Include="Discord.Net-Anarchy">
-        <HintPath>..\..\Discord.Net\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net-Anarchy.dll</HintPath>
+        <HintPath>..\..\..\Documents\GitHub\Discord.Net\Discord.Net-Anarchy\bin\Release\net8.0\Discord.Net-Anarchy.dll</HintPath>
       </Reference>
       <Reference Include="Discord.Net.Commands">
-        <HintPath>..\..\Discord.Net\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.Commands.dll</HintPath>
+        <HintPath>..\..\..\Documents\GitHub\Discord.Net\Discord.Net-Anarchy\bin\Release\net8.0\Discord.Net.Commands.dll</HintPath>
       </Reference>
       <Reference Include="Discord.Net.Core">
-        <HintPath>..\..\Discord.Net\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.Core.dll</HintPath>
+        <HintPath>..\..\..\Documents\GitHub\Discord.Net\Discord.Net-Anarchy\bin\Release\net8.0\Discord.Net.Core.dll</HintPath>
       </Reference>
       <Reference Include="Discord.Net.Interactions">
-        <HintPath>..\..\Discord.Net\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.Interactions.dll</HintPath>
+        <HintPath>..\..\..\Documents\GitHub\Discord.Net\Discord.Net-Anarchy\bin\Release\net8.0\Discord.Net.Interactions.dll</HintPath>
       </Reference>
       <Reference Include="Discord.Net.Rest">
-        <HintPath>..\..\Discord.Net\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.Rest.dll</HintPath>
+        <HintPath>..\..\..\Documents\GitHub\Discord.Net\Discord.Net-Anarchy\bin\Release\net8.0\Discord.Net.Rest.dll</HintPath>
       </Reference>
       <Reference Include="Discord.Net.Webhook">
-        <HintPath>..\..\Discord.Net\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.Webhook.dll</HintPath>
+        <HintPath>..\..\..\Documents\GitHub\Discord.Net\Discord.Net-Anarchy\bin\Release\net8.0\Discord.Net.Webhook.dll</HintPath>
       </Reference>
       <Reference Include="Discord.Net.WebSocket">
-        <HintPath>..\..\Discord.Net\Discord.Net-Anarchy\bin\Debug\net8.0\Discord.Net.WebSocket.dll</HintPath>
+        <HintPath>..\..\..\Documents\GitHub\Discord.Net\Discord.Net-Anarchy\bin\Release\net8.0\Discord.Net.WebSocket.dll</HintPath>
       </Reference>
     </ItemGroup>
 

@@ -19,24 +19,20 @@ public class ProxyDistributorService
         var proxies = _proxyStorageService.GetProxies();
         return Task.FromResult(new GetProxiesResponse
         {
-            Proxies = { proxies }
+            Proxies = { proxies.Select(x => x.ToProxyGrpc()) }
         });
     }
 
     public override Task<TakeProxyResponse> TakeProxy(TakeProxyRequest request, ServerCallContext context)
     {
-        var remoteAddress = context.GetHttpContext().Connection.RemoteIpAddress?.ToString();
-        var remotePort = context.GetHttpContext().Connection.RemotePort;
-
-        if (remoteAddress is null)
+        if (string.IsNullOrEmpty(request.NodeAddress) || string.IsNullOrWhiteSpace(request.NodeAddress))
             return Task.FromResult(new TakeProxyResponse
             {
                 Proxy = null,
-                ErrorMessage = "Failed to get node address"
+                ErrorMessage = "Cannot take proxy without node address"
             });
         
-        var nodeAddress = $"{remoteAddress}:{remotePort}";
-        if (!_proxyStorageService.TryTakeProxy(nodeAddress, out var takenProxyWithKey))
+        if (!_proxyStorageService.TryTakeProxy(request.NodeAddress, out var takenProxyWithKey))
             return Task.FromResult(new TakeProxyResponse
             {
                 Proxy = null,
