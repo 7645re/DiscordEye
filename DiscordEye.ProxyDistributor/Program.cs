@@ -12,9 +12,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddGrpc();
 builder.Services.AddSingleton<IVaultClient>(_ =>
 {
-    var vaultAddress = "http://localhost:8200";
-    var vaultToken = "root-token";
-    return new VaultClient(new VaultClientSettings(vaultAddress, new TokenAuthMethodInfo(vaultToken)));
+    var vaultOpt = builder.Configuration.GetSection("Vault");
+    var address = vaultOpt.GetValue<string>("Address");
+    var token = vaultOpt.GetValue<string>("Token");
+    return new VaultClient(new VaultClientSettings(address, new TokenAuthMethodInfo(token)));
 });
 builder.Services.AddSingleton<IKeyValueSecretsEngineV2>(provider =>
 {

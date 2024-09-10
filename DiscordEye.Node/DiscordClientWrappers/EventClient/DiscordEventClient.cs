@@ -3,6 +3,7 @@ using Discord;
 using Discord.WebSocket;
 using DiscordEye.Node.Options;
 using DiscordEye.Shared.Events;
+using DiscordEye.Shared.Extensions;
 using MassTransit;
 using Microsoft.Extensions.Options;
 
@@ -15,6 +16,7 @@ public class DiscordEventClient : IDiscordEventClient
     private readonly ILogger<DiscordEventClient> _logger;
     private readonly Channel<StreamStartedRequest> _streamStartedRequestChannel;
     private readonly IServiceProvider _serviceProvider;
+    private readonly string _token;
 
     public DiscordEventClient(
         IOptions<DiscordOptions> discordOptions,
@@ -25,6 +27,7 @@ public class DiscordEventClient : IDiscordEventClient
         _options = discordOptions.Value;
         _logger = logger;
         _serviceProvider = serviceProvider;
+        _token = StartupExtensions.GetDiscordTokenFromEnvironment();
         _client = InitClientAsync().GetAwaiter().GetResult();
     }
 
@@ -37,7 +40,7 @@ public class DiscordEventClient : IDiscordEventClient
 
         var client = new DiscordSocketClient(discordSocketConfig);
         RegisterEventsHandlers();
-        await client.LoginAsync(TokenType.User, _options.Token);
+        await client.LoginAsync(TokenType.User, _token);
         await client.StartAsync();
         _logger.LogInformation($"{nameof(DiscordEventClient)} complete started");
 

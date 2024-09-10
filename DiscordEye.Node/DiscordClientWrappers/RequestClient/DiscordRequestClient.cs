@@ -5,9 +5,8 @@ using Discord.Net.Rest;
 using Discord.WebSocket;
 using DiscordEye.Node.Dto;
 using DiscordEye.Node.Mappers;
-using DiscordEye.Node.Options;
 using DiscordEye.ProxyDistributor;
-using Microsoft.Extensions.Options;
+using DiscordEye.Shared.Extensions;
 
 namespace DiscordEye.Node.DiscordClientWrappers.RequestClient;
 
@@ -16,28 +15,19 @@ public class DiscordRequestClient : IDiscordRequestClient
     private readonly ILogger<DiscordRequestClient> _logger;
     private DiscordSocketClient? _client;
     private readonly ProxyDistributorService.ProxyDistributorServiceClient _proxyDistributorService;
-    private readonly DiscordOptions _options;
     private readonly SemaphoreSlim _clientSemaphore = new(1,1);
     private Proxy? _takenProxy;
-    private readonly string _nodeAddress;
+    private readonly string _port;
+    private readonly string _token;
 
     public DiscordRequestClient(
         ILogger<DiscordRequestClient> logger,
-        ProxyDistributorService.ProxyDistributorServiceClient proxyDistributorService,
-        IOptions<DiscordOptions> options, 
-        IConfiguration configuration)
+        ProxyDistributorService.ProxyDistributorServiceClient proxyDistributorService)
     {
-        var url = configuration?["Kestrel:Endpoints:Http:Url"];
-        if (url is null)
-            throw new ArgumentException("It is necessary to indicate at which address the application will be hosted");
-        var uri = new Uri(url);
-        var address = uri.Host;
-        var port = uri.Port;
-
-        _nodeAddress = $"{address}:{port}";
+        _token = StartupExtensions.GetDiscordTokenFromEnvironment();
+        _port = StartupExtensions.GetPort();
         _logger = logger;
         _proxyDistributorService = proxyDistributorService;
-        _options = options.Value;
         _client = InitClientAsync().GetAwaiter().GetResult();
     }
 
@@ -54,7 +44,7 @@ public class DiscordRequestClient : IDiscordRequestClient
                 useProxy: true);
 
         var client = new DiscordSocketClient(discordSocketConfig);
-        await client.LoginAsync(TokenType.User, _options.Token);
+        await client.LoginAsync(TokenType.User, _token);
         await client.StartAsync();
         _logger.LogInformation($"{nameof(DiscordRequestClient)} complete started");
         return client;
@@ -99,7 +89,7 @@ public class DiscordRequestClient : IDiscordRequestClient
             {
                 webProxyResponse = await _proxyDistributorService.TakeProxyAsync(new TakeProxyRequest
                 {
-                    NodeAddress = _nodeAddress
+                    NodeAddress = $"localhost:{_port}"
                 });
             }
             catch (Exception e)

@@ -56,3 +56,28 @@ services:
       - "5432:5432"
     networks:
       - DiscordEye
+  
+  node1:
+    build:
+      context: .
+      dockerfile: DiscordEye.Node/Dockerfile
+    container_name: DiscordEye.Node
+    environment:
+      - DISCORD_TOKEN=token
+      - ASPNETCORE_HTTP_PORTS=7000
+    networks:
+      - DiscordEye
+    ports:
+      - "7000:7000"
+  
+  proxyDistributor:
+    build:
+      context: .
+      dockerfile: DiscordEye.ProxyDistributor/Dockerfile
+    container_name: DiscordEye.ProxyDistributor
+    environment:
+      - ASPNETCORE_HTTP_PORTS=5000
+    networks:
+      - DiscordEye
+    ports:
+      - "5000:5000"
