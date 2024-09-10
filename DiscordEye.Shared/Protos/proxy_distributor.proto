@@ -24,6 +24,7 @@ message ProxyGrpc {
 }
 
 message TakeProxyRequest {
+  string node_address = 1;
 }
 
 message TakeProxyResponse {

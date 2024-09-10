@@ -1,4 +1,3 @@
-using System.Net;
 using DiscordEye.Node.BackgroundServices;
 using DiscordEye.Node.DiscordClientWrappers.EventClient;
 using DiscordEye.Node.DiscordClientWrappers.RequestClient;
@@ -7,14 +6,10 @@ using DiscordEye.Node.Services;
 using DiscordEye.ProxyDistributor;
 using DiscordEye.Shared.Events;
 using DiscordEye.Shared.Options;
-using Grpc.Net.Client;
 using MassTransit;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.WebHost.ConfigureKestrel(opt =>
-{
-    opt.Listen(IPAddress.Any, 5000);
-});
+
 var kafkaOptions = builder
     .Configuration
     .GetRequiredSection("Kafka")

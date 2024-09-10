@@ -19,12 +19,22 @@ public class DiscordRequestClient : IDiscordRequestClient
     private readonly DiscordOptions _options;
     private readonly SemaphoreSlim _clientSemaphore = new(1,1);
     private Proxy? _takenProxy;
+    private readonly string _nodeAddress;
 
     public DiscordRequestClient(
         ILogger<DiscordRequestClient> logger,
         ProxyDistributorService.ProxyDistributorServiceClient proxyDistributorService,
-        IOptions<DiscordOptions> options)
+        IOptions<DiscordOptions> options, 
+        IConfiguration configuration)
     {
+        var url = configuration?["Kestrel:Endpoints:Http:Url"];
+        if (url is null)
+            throw new ArgumentException("It is necessary to indicate at which address the application will be hosted");
+        var uri = new Uri(url);
+        var address = uri.Host;
+        var port = uri.Port;
+
+        _nodeAddress = $"{address}:{port}";
         _logger = logger;
         _proxyDistributorService = proxyDistributorService;
         _options = options.Value;
@@ -87,7 +97,10 @@ public class DiscordRequestClient : IDiscordRequestClient
             TakeProxyResponse? webProxyResponse = null; 
             try
             {
-                webProxyResponse = await _proxyDistributorService.TakeProxyAsync(new TakeProxyRequest());
+                webProxyResponse = await _proxyDistributorService.TakeProxyAsync(new TakeProxyRequest
+                {
+                    NodeAddress = _nodeAddress
+                });
             }
             catch (Exception e)
             {

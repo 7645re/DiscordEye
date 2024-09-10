@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using DiscordEye.ProxyDistributor.Data;
-using DiscordEye.ProxyDistributor.Dto;
 using DiscordEye.ProxyDistributor.Services.ProxyStorage;
 using Grpc.Core;
 using Grpc.Net.Client;
@@ -12,6 +11,8 @@ public class ProxyHeartbeatBackgroundService : BackgroundService
     private readonly ConcurrentQueue<Proxy> _takenProxies = new();
     private readonly ILogger<ProxyHeartbeatBackgroundService> _logger;
     private readonly IProxyStorageService _proxyStorageService;
+    private readonly ConcurrentDictionary<string, GrpcChannel> _cachedChannels = new();
+    //TODO: Transfer heartbeat periods and check period to configuration file
     private readonly TimeSpan _heartbeatPeriod = TimeSpan.FromSeconds(10);
     private readonly TimeSpan _proxiesAvailableCheckPeriod = TimeSpan.FromSeconds(1);
 
@@ -26,7 +27,6 @@ public class ProxyHeartbeatBackgroundService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await StartProxiesAvailableCheckTask(stoppingToken);
-
     }
 
     public bool TryRegisterProxy(Proxy proxy)
@@ -65,7 +65,7 @@ public class ProxyHeartbeatBackgroundService : BackgroundService
                 if (result.heartbeatResult)
                 {
                     _logger.LogInformation($"Success heartbeat to node {proxy.TakerAddress}" +
-                                           $"for proxy with id {proxy.Id}");
+                                           $" for proxy with id {proxy.Id}");
                     if (proxy.TryProlong(result.releaseKey.Value, _heartbeatPeriod))
                     {
                         _logger.LogInformation($"Prolonged proxy with id {proxy.Id}");
@@ -91,12 +91,38 @@ public class ProxyHeartbeatBackgroundService : BackgroundService
         }
     }
 
+    private bool TryCreateOrGetCachedGrpcChannel(string address, out GrpcChannel? createdChannel)
+    {
+        if (_cachedChannels.TryGetValue(address, out var channel))
+        {
+            _logger.LogInformation($"Get cached grpc channel for {address}");
+            createdChannel = channel;
+            return true;
+        }
+
+        var newChannel = GrpcChannel.ForAddress($"http://{address}");
+        if (!_cachedChannels.TryAdd(address, newChannel))
+        {
+            createdChannel = null;
+            return false;
+        }
+        
+        _logger.LogInformation($"Created new grpc channel for {address}");
+        createdChannel = newChannel;
+        return true;
+    }
+    
     private async Task<(bool heartbeatResult, Guid? releaseKey)> HeartbeatToTakerAsync(Proxy proxy)
     {
         (bool heartbeatResult, Guid? releaseKey) result = (false, null);
         
         // TODO: validate node address by regex
-        using var channel = GrpcChannel.ForAddress($"http://{proxy.TakerAddress}");
+        if (proxy.TakerAddress is null
+            || !TryCreateOrGetCachedGrpcChannel(proxy.TakerAddress, out var channel))
+        {
+            return (false, null);
+        }
+            
         var client = new ProxyHeartbeat.ProxyHeartbeatClient(channel);
         try
         {
@@ -109,7 +135,7 @@ public class ProxyHeartbeatBackgroundService : BackgroundService
                 result.releaseKey = parsedReleaseKey;
             }
         }
-        catch (RpcException ex)
+        catch (RpcException)
         {
         }
 

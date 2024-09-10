@@ -1,4 +1,3 @@
-using System.Net;
 using DiscordEye.ProxyDistributor.BackgroundServices;
 using DiscordEye.ProxyDistributor.Mappers;
 using DiscordEye.ProxyDistributor.Services.ProxyDistributor;
@@ -9,10 +8,7 @@ using VaultSharp.V1.AuthMethods.Token;
 using VaultSharp.V1.SecretsEngines.KeyValue.V2;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.WebHost.ConfigureKestrel(opt =>
-{
-    opt.Listen(IPAddress.Any, 4999);
-});
+
 builder.Services.AddGrpc();
 builder.Services.AddSingleton<IVaultClient>(_ =>
 {
