@@ -47,8 +47,4 @@
       <ProjectReference Include="..\DiscordEye.Infrastructure\DiscordEye.Infrastructure.csproj" />
       <ProjectReference Include="..\DiscordEye.Shared\DiscordEye.Shared.csproj" />
     </ItemGroup>
-    
-    <ItemGroup>
-      <Folder Include="TakerNodes\" />
-    </ItemGroup>
 </Project>
