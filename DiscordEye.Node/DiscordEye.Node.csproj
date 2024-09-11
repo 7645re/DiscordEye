@@ -11,6 +11,7 @@
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="Grpc.AspNetCore" Version="2.57.0" />
         <PackageReference Include="MassTransit.Kafka" Version="8.2.3" />
+        <PackageReference Include="Discord.Net-Anarchy-Forked" Version="1.8.2" />
     </ItemGroup>
 
     <ItemGroup>
@@ -56,28 +57,4 @@
       </Content>
     </ItemGroup>
     
-    <ItemGroup>
-      <Reference Include="Discord.Net-Anarchy">
-        <HintPath>..\..\..\Documents\GitHub\Discord.Net\Discord.Net-Anarchy\bin\Release\net8.0\Discord.Net-Anarchy.dll</HintPath>
-      </Reference>
-      <Reference Include="Discord.Net.Commands">
-        <HintPath>..\..\..\Documents\GitHub\Discord.Net\Discord.Net-Anarchy\bin\Release\net8.0\Discord.Net.Commands.dll</HintPath>
-      </Reference>
-      <Reference Include="Discord.Net.Core">
-        <HintPath>..\..\..\Documents\GitHub\Discord.Net\Discord.Net-Anarchy\bin\Release\net8.0\Discord.Net.Core.dll</HintPath>
-      </Reference>
-      <Reference Include="Discord.Net.Interactions">
-        <HintPath>..\..\..\Documents\GitHub\Discord.Net\Discord.Net-Anarchy\bin\Release\net8.0\Discord.Net.Interactions.dll</HintPath>
-      </Reference>
-      <Reference Include="Discord.Net.Rest">
-        <HintPath>..\..\..\Documents\GitHub\Discord.Net\Discord.Net-Anarchy\bin\Release\net8.0\Discord.Net.Rest.dll</HintPath>
-      </Reference>
-      <Reference Include="Discord.Net.Webhook">
-        <HintPath>..\..\..\Documents\GitHub\Discord.Net\Discord.Net-Anarchy\bin\Release\net8.0\Discord.Net.Webhook.dll</HintPath>
-      </Reference>
-      <Reference Include="Discord.Net.WebSocket">
-        <HintPath>..\..\..\Documents\GitHub\Discord.Net\Discord.Net-Anarchy\bin\Release\net8.0\Discord.Net.WebSocket.dll</HintPath>
-      </Reference>
-    </ItemGroup>
-
 </Project>
