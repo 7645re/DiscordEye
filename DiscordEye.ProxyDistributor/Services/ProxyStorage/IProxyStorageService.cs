@@ -5,8 +5,9 @@ namespace DiscordEye.ProxyDistributor.Services.ProxyStorage;
 
 public interface IProxyStorageService
 {
-    bool TryReleaseProxy(int proxyId, Guid releaseKey);
-    bool TryTakeProxy(string nodeAddress, out ( Proxy takenProxy, Guid releaseKey)? takenProxyWithKey);
-    bool TryForceReleaseProxy(int id);
+    ValueTask<bool> TryReleaseProxy(int proxyId, Guid releaseKey);
+    ValueTask<Proxy?> TryTakeProxy(string nodeAddress);
+    ValueTask<bool> TryForceReleaseProxy(int id);
     ProxyDto[] GetProxies();
+    Task<bool> TryProlong(Guid releaseKey, TimeSpan prolongTime, Proxy proxy);
 }

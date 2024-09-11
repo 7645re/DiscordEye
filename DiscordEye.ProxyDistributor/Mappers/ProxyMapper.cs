@@ -7,12 +7,14 @@ public static class ProxyMapper
 {
     public static bool TryToProxyDto(this IDictionary<string, object> data, out ProxyDto? proxyDto)
     {
-        if (!data.TryGetValue("id", out var id)
+        if (
+            !data.TryGetValue("id", out var id)
             || !int.TryParse(id.ToString(), out var parsedId)
             || !data.TryGetValue("address", out var address)
             || !data.TryGetValue("port", out var port)
             || !data.TryGetValue("login", out var login)
-            || !data.TryGetValue("password", out var password))
+            || !data.TryGetValue("password", out var password)
+        )
         {
             proxyDto = null;
             return false;
@@ -23,10 +25,12 @@ public static class ProxyMapper
         var stringLogin = login.ToString();
         var stringPassword = password.ToString();
 
-        if (stringAddress is null
+        if (
+            stringAddress is null
             || stringPort is null
             || stringLogin is null
-            || stringPassword is null)
+            || stringPassword is null
+        )
         {
             proxyDto = null;
             return false;
@@ -40,20 +44,21 @@ public static class ProxyMapper
             stringPassword,
             null,
             null,
-            true);
+            true
+        );
         return true;
     }
-    
-    public static TakenProxy ToTakenProxy(this (Proxy proxy, Guid releaseKey) proxyWithKey)
+
+    public static TakenProxy ToTakenProxy(this Proxy proxy)
     {
         return new TakenProxy
         {
-            Id = proxyWithKey.proxy.Id,
-            Address = proxyWithKey.proxy.Address,
-            Port = proxyWithKey.proxy.Port,
-            Login = proxyWithKey.proxy.Login,
-            Password = proxyWithKey.proxy.Password,
-            ReleaseKey = proxyWithKey.releaseKey.ToString()
+            Id = proxy.Id,
+            Address = proxy.Address,
+            Port = proxy.Port,
+            Login = proxy.Login,
+            Password = proxy.Password,
+            ReleaseKey = proxy.ReleaseKey.ToString()
         };
     }
 
@@ -67,7 +72,8 @@ public static class ProxyMapper
             proxy.Password,
             proxy.TakerAddress,
             proxy.TakenDateTime,
-            proxy.IsFree());
+            proxy.IsFree()
+        );
     }
 
     public static Proxy ToProxy(this ProxyDto proxyDto)
@@ -77,7 +83,8 @@ public static class ProxyMapper
             proxyDto.Address,
             proxyDto.Port,
             proxyDto.Login,
-            proxyDto.Password);
+            proxyDto.Password
+        );
     }
 
     public static ProxyGrpc ToProxyGrpc(this ProxyDto proxyDto)

@@ -4,7 +4,7 @@ using Grpc.Core;
 
 namespace DiscordEye.ProxyDistributor.Services.ProxyDistributor;
 
-public class ProxyDistributorService 
+public class ProxyDistributorService
     : DiscordEye.ProxyDistributor.ProxyDistributorService.ProxyDistributorServiceBase
 {
     private readonly IProxyStorageService _proxyStorageService;
@@ -14,56 +14,64 @@ public class ProxyDistributorService
         _proxyStorageService = proxyStorageService;
     }
 
-    public override Task<GetProxiesResponse> GetProxies(GetProxiesRequest request, ServerCallContext context)
+    public override Task<GetProxiesResponse> GetProxies(
+        GetProxiesRequest request,
+        ServerCallContext context
+    )
     {
         var proxies = _proxyStorageService.GetProxies();
-        return Task.FromResult(new GetProxiesResponse
-        {
-            Proxies = { proxies.Select(x => x.ToProxyGrpc()) }
-        });
+        return Task.FromResult(
+            new GetProxiesResponse { Proxies = { proxies.Select(x => x.ToProxyGrpc()) } }
+        );
     }
 
-    public override Task<TakeProxyResponse> TakeProxy(TakeProxyRequest request, ServerCallContext context)
+    public override async Task<TakeProxyResponse> TakeProxy(
+        TakeProxyRequest request,
+        ServerCallContext context
+    )
     {
-        if (string.IsNullOrEmpty(request.NodeAddress) || string.IsNullOrWhiteSpace(request.NodeAddress))
-            return Task.FromResult(new TakeProxyResponse
+        if (
+            string.IsNullOrEmpty(request.NodeAddress)
+            || string.IsNullOrWhiteSpace(request.NodeAddress)
+        )
+            return new TakeProxyResponse
             {
                 Proxy = null,
                 ErrorMessage = "Cannot take proxy without node address"
-            });
-        
-        if (!_proxyStorageService.TryTakeProxy(request.NodeAddress, out var takenProxyWithKey))
-            return Task.FromResult(new TakeProxyResponse
-            {
-                Proxy = null,
-                ErrorMessage = "Failed to take proxy"
-            });
+            };
 
-        return Task.FromResult(new TakeProxyResponse
+        var takenProxy = await _proxyStorageService.TryTakeProxy(request.NodeAddress);
+        if (takenProxy is null)
         {
-            Proxy = takenProxyWithKey.Value.ToTakenProxy()
-        });
+            return new TakeProxyResponse { Proxy = null, ErrorMessage = "Failed to take proxy" };
+        }
+
+        return new TakeProxyResponse { Proxy = takenProxy.ToTakenProxy() };
     }
 
-    public override Task<ReleaseProxyResponse> ReleaseProxy(ReleaseProxyRequest request, ServerCallContext context)
+    public override async Task<ReleaseProxyResponse> ReleaseProxy(
+        ReleaseProxyRequest request,
+        ServerCallContext context
+    )
     {
-        if (!Guid.TryParse(request.ReleaseKey, out var releaseKey))
-            return Task.FromResult(new ReleaseProxyResponse
+        if (Guid.TryParse(request.ReleaseKey, out var releaseKey) == false)
+        {
+            return new ReleaseProxyResponse
             {
                 OperationSuccessful = false,
                 ErrorMessage = "Cannot parse release key"
-            });
-        
-        if (!_proxyStorageService.TryReleaseProxy(request.ProxyId, releaseKey))
-            return Task.FromResult(new ReleaseProxyResponse
+            };
+        }
+
+        if (await _proxyStorageService.TryReleaseProxy(request.ProxyId, releaseKey) == false)
+        {
+            return new ReleaseProxyResponse
             {
                 OperationSuccessful = false,
                 ErrorMessage = "Failed to release proxy"
-            });
-        
-        return Task.FromResult(new ReleaseProxyResponse
-        {
-            OperationSuccessful = true
-        });
+            };
+        }
+
+        return new ReleaseProxyResponse { OperationSuccessful = true };
     }
 }
