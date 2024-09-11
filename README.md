@@ -17,7 +17,7 @@ Depending on the project you are starting, you may need to complete several
 additional actions.
 
 ### DiscordEye.Node:
-1. Pass your discord account token to `appsettings`. It can be obtained from the header 
+1. Pass your discord account token to environment variable `DISCORD_TOKEN`. It can be obtained from the header 
 `Authorization` in any request in the discord browser client.
 2. If you want the node to send events to the Kafka message broker,
 you need to run zookeeper & kafka first, this can be done using run
