@@ -40,7 +40,7 @@ To download and connect, contact the author of the project.
 discord tokens for nodes will be stored there.
 
 To enter data into the database, you need to go to `Docker Desktop` -> `vault container` -> `Exec` and enter the commands:
-1. To add data `vault kv put secret/proxy/1 address="1.1.1.1" port="1" login="1" password="1"`
+1. To add data `vault kv put secret/proxy/1 id="1" address="1.1.1.1" port="1" login="1" password="1"`
 2. To view the data `vault kv get secret/proxy/1`
 3. To delete data `vault kv delete secret/proxy/1`
 
