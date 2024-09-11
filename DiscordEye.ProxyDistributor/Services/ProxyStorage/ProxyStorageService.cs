@@ -132,7 +132,7 @@ public class ProxyStorageService : IProxyStorageService
             return false;
         }
 
-        await _takerNodesManager.RemoveByReleaseKeyKey(releaseKey);
+        await _takerNodesManager.RemoveByReleaseKey(releaseKey);
 
         proxy.TakerAddress = null;
         proxy.ReleaseKey = null;
@@ -193,7 +193,7 @@ public class ProxyStorageService : IProxyStorageService
 
         if (proxy.ReleaseKey is not null)
         {
-            await _takerNodesManager.RemoveByReleaseKeyKey(proxy.ReleaseKey.Value);
+            await _takerNodesManager.RemoveByReleaseKey(proxy.ReleaseKey.Value);
         }
 
         proxy.TakerAddress = null;

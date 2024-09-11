@@ -5,5 +5,5 @@ namespace DiscordEye.ProxyDistributor.Services.Node.Manager;
 
 public interface ITakerNodesManager : IFileManager<NodeInfoData>
 {
-    Task RemoveByReleaseKeyKey(Guid releaseKey);
+    Task RemoveByReleaseKey(Guid releaseKey);
 }

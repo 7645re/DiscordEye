@@ -8,7 +8,7 @@ public class TakerNodesManager : BaseJsonFileManager<NodeInfoData>, ITakerNodesM
     protected override string FolderPath =>
         Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TakerNodes");
 
-    public async Task RemoveByReleaseKeyKey(Guid releaseKey)
+    public async Task RemoveByReleaseKey(Guid releaseKey)
     {
         await RemoveBy(x => x.ReleaseKey == releaseKey);
     }
