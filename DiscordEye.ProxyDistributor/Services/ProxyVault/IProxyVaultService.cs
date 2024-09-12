@@ -4,5 +4,5 @@ namespace DiscordEye.ProxyDistributor.Services.ProxyVault;
 
 public interface IProxyVaultService
 {
-    Task<ProxyDto[]> GetAllProxiesAsync();
+    Task<Dto.ProxyVault[]> GetAllProxiesAsync();
 }

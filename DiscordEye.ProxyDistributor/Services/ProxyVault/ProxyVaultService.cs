@@ -19,9 +19,9 @@ public class ProxyVaultService : IProxyVaultService
         _logger = logger;
     }
 
-    public async Task<ProxyDto[]> GetAllProxiesAsync()
+    public async Task<Dto.ProxyVault[]> GetAllProxiesAsync()
     {
-        var proxies = new List<ProxyDto>();
+        var proxies = new List<Dto.ProxyVault>();
         var proxyKeys = await GetProxyKeysAsync();
         foreach (var path in proxyKeys.Select(key => $"{ProxyPathPrefix}/{key}"))
         {
@@ -47,12 +47,11 @@ public class ProxyVaultService : IProxyVaultService
         }
         catch (VaultApiException ex)
         {
-            _logger.LogInformation($"Error when retrieving a list of keys: {ex.Message}");
             return [];
         }
     }
 
-    private async Task<ProxyDto?> GetProxyByPathAsync(string path, string mountPoint)
+    private async Task<Dto.ProxyVault?> GetProxyByPathAsync(string path, string mountPoint)
     {
         try
         {
@@ -61,14 +60,13 @@ public class ProxyVaultService : IProxyVaultService
             if (secretData is null)
                 return null;
 
-            if (!secretData.TryToProxyDto(out var proxy))
+            if (!secretData.TryToProxyVault(out var proxy))
                 return null;
             
             return proxy;
         }
         catch (VaultApiException ex)
         {
-            _logger.LogInformation($"Error when receiving proxy along the path {path}: {ex.Message}");
             return null;
         }
     }

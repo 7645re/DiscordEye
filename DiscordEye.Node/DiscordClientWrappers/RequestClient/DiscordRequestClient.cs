@@ -46,7 +46,6 @@ public class DiscordRequestClient : IDiscordRequestClient
         var client = new DiscordSocketClient(discordSocketConfig);
         await client.LoginAsync(TokenType.User, _token);
         await client.StartAsync();
-        _logger.LogInformation($"{nameof(DiscordRequestClient)} complete started");
         return client;
     }
 
@@ -94,7 +93,6 @@ public class DiscordRequestClient : IDiscordRequestClient
             }
             catch (Exception e)
             {
-                _logger.LogInformation($"Can't call grpc proxy distributor service");
             }
 
             if (webProxyResponse?.Proxy is not null)
@@ -127,7 +125,6 @@ public class DiscordRequestClient : IDiscordRequestClient
                 if (proxy is null)
                     continue;
 
-                _logger.LogInformation("Proxy taken: {Proxy}", proxy);
                 await ExecuteInClientSemaphoreAsync(async () =>
                 {
                     if (_client != null)
@@ -137,7 +134,6 @@ public class DiscordRequestClient : IDiscordRequestClient
                     }
                     _client = await InitClientAsync(proxy.ToWebProxy());
                     _takenProxy = proxy.ToProxy();
-                    _logger.LogInformation("Reinitialize client with proxy complete");
                     return Task.CompletedTask;
                 });
             }

@@ -42,7 +42,6 @@ public class DiscordEventClient : IDiscordEventClient
         RegisterEventsHandlers();
         await client.LoginAsync(TokenType.User, _token);
         await client.StartAsync();
-        _logger.LogInformation($"{nameof(DiscordEventClient)} complete started");
 
         return client;
         void RegisterEventsHandlers()
@@ -55,7 +54,6 @@ public class DiscordEventClient : IDiscordEventClient
             client.MessageDeleted += OnClientOnMessageDeleted;
             client.MessageReceived += OnClientOnMessageReceived;
             client.MessageUpdated += OnClientOnMessageUpdated;
-            _logger.LogInformation($"Event handlers are registered in {nameof(DiscordEventClient)}");
         }
     }
     
@@ -64,8 +62,6 @@ public class DiscordEventClient : IDiscordEventClient
         foreach (var guild in _client.Guilds)
         {
             await _client.SubscribeToGuildEvents(guild.Id);
-            _logger.LogInformation(
-                $"{_client.CurrentUser.Id}:{_client.CurrentUser.Username} subscribed to {guild.Name}");
         }
     }
 
