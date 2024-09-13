@@ -11,7 +11,7 @@ public class ProxyReservationService : IProxyReservationService
     private readonly ConcurrentQueue<Proxy> _proxiesQueue;
     private readonly KeyedLockService _locker;
     private readonly IProxyStateFileManager _proxyStateFileManager;
-    private readonly ConcurrentDictionary<Guid, ProxyState> _proxiesStates;
+    private readonly ConcurrentDictionary<Guid, ProxyState?> _proxiesStates;
     
     public ProxyReservationService(
         KeyedLockService locker,
@@ -22,9 +22,12 @@ public class ProxyReservationService : IProxyReservationService
         _proxies = proxies;
         _proxyStateFileManager = proxyStateFileManager;
         _proxiesQueue = new ConcurrentQueue<Proxy>(proxies);
-        _proxiesStates = new ConcurrentDictionary<Guid, ProxyState>(proxies
-            .Select(x => new ProxyState(x.Id, null, null, null))
-            .ToDictionary(keySelector: x => x.ProxyId, elementSelector: x => x));
+        _proxiesStates = new ConcurrentDictionary<Guid, ProxyState?>(proxies
+            .Select(proxy => new
+            {
+                proxy, state = (ProxyState?)null
+            })
+            .ToDictionary(x => x.proxy.Id, x => x.state));
     }
 
     public IReadOnlyCollection<Proxy> GetProxies()
@@ -54,17 +57,13 @@ public class ProxyReservationService : IProxyReservationService
         {
             var proxyState = GetProxyState(proxy.Id);
 
-            if (ProxyIsFree(proxyState) || !proxyState.ReleaseKey.Equals(releaseKey))
+            if (ProxyIsFree(proxy.Id) || proxyState is null || proxyState.ReleaseKey.Equals(releaseKey) == false)
             {
                 return false;
             }
+
+            RemoveProxyState(proxy.Id);
             
-            var updatedProxyState = new ProxyState(
-                proxyState.ProxyId,
-                null,
-                null,
-                null);
-            UpdateProxyState(proxyState, updatedProxyState);
             await _proxyStateFileManager.RemoveByReleaseKey(releaseKey);
             _proxiesQueue.Enqueue(proxy);
             
@@ -98,45 +97,35 @@ public class ProxyReservationService : IProxyReservationService
     {
         using (await _locker.LockAsync(GetProxyLockKey(proxy)))
         {
-            var proxyState = GetProxyState(proxy.Id);
-            if (!ProxyIsFree(proxyState))
+            if (!ProxyIsFree(proxy.Id))
             {
                 return false;
             }
 
             var reservationTime = DateTime.Now;
             var updatedProxyState = new ProxyState(
-                proxyState.ProxyId,
                 nodeAddress,
                 releaseKey,
                 reservationTime);
 
             await _proxyStateFileManager.Append(updatedProxyState);
-            UpdateProxyState(proxyState, updatedProxyState);
+            
+            _proxiesStates.AddOrUpdate(
+                proxy.Id,
+                updatedProxyState,
+                (_, _) => updatedProxyState
+            );
             
             return true;
         }
     }
 
-    private bool ProxyIsFree(ProxyState proxyState)
+    private bool ProxyIsFree(Guid proxyId)
     {
-        var allNull = proxyState.NodeAddress == null 
-                      && proxyState.ReleaseKey == null 
-                      && proxyState.LastReservationTime == null;
-        var allNotNull = proxyState.NodeAddress != null 
-                         && proxyState.ReleaseKey != null 
-                         && proxyState.LastReservationTime != null;
-    
-        if (!allNull && !allNotNull)
-        {
-            throw new InvalidOperationException("NodeAddress, ReleaseKey, and LastReservationTime " +
-                                                "must either all be null or all be non-null.");
-        }
-
-        return allNull;
+        return GetProxyState(proxyId) is not null;
     }
 
-    private ProxyState GetProxyState(Guid proxyId)
+    private ProxyState? GetProxyState(Guid proxyId)
     {
         if (!_proxiesStates.TryGetValue(proxyId, out var proxyState))
             throw new ArgumentException("Doesn't have proxy state");
@@ -144,12 +133,9 @@ public class ProxyReservationService : IProxyReservationService
         return proxyState;
     }
 
-    private void UpdateProxyState(ProxyState oldProxyState, ProxyState newProxyState)
+    private void RemoveProxyState(Guid proxyId)
     {
-        if (!_proxiesStates.TryUpdate(oldProxyState.ProxyId, newProxyState, oldProxyState))
-        {
-            throw new ArgumentException("Failed to update proxy state");
-        }
+        _proxiesStates.AddOrUpdate(proxyId, _ => null, (_, _) => null);
     }
     
     private static string GetProxyLockKey(Proxy proxy)

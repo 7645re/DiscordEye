@@ -1,3 +1,3 @@
 namespace DiscordEye.ProxyDistributor.Data;
 
-public record ProxyState(Guid ProxyId, string? NodeAddress, Guid? ReleaseKey, DateTime? LastReservationTime);
+public record ProxyState(string NodeAddress, Guid ReleaseKey, DateTime LastReservationTime);
