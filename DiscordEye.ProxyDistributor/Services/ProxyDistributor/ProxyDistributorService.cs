@@ -1,76 +1,53 @@
+using DiscordEye.ProxyDistributor.Dto;
+using DiscordEye.ProxyDistributor.Services.Heartbeat;
 using DiscordEye.ProxyDistributor.Services.ProxyReservation;
-using Grpc.Core;
 
 namespace DiscordEye.ProxyDistributor.Services.ProxyDistributor;
 
-public class ProxyDistributorService
-    : DiscordEye.ProxyDistributor.ProxyDistributorService.ProxyDistributorServiceBase
+public class ProxyDistributorService : IProxyDistributorService
 {
     private readonly IProxyReservationService _proxyReservationService;
+    private readonly IProxyHeartbeatService _proxyHeartbeatService;
 
-    public ProxyDistributorService(IProxyReservationService proxyReservationService)
+    public ProxyDistributorService(
+        IProxyReservationService proxyReservationService,
+        IProxyHeartbeatService proxyHeartbeatService)
     {
         _proxyReservationService = proxyReservationService;
+        _proxyHeartbeatService = proxyHeartbeatService;
     }
-
-    public override Task<GetProxiesResponse> GetProxies(
-        GetProxiesRequest request,
-        ServerCallContext context
-    )
+    
+    public async Task<ProxyWithProxyState?> ReserveProxy(string nodeAddress)
     {
-        var proxies = _proxyReservationService.GetProxies();
-        return Task.FromResult(
-            new GetProxiesResponse { Proxies = {  } }
-        );
+        var proxyWithProxyState = await _proxyReservationService.ReserveProxy(nodeAddress);
+        if (proxyWithProxyState == null)
+        {
+            return null;
+        }
+
+        if (_proxyHeartbeatService.RegisterProxyHeartbeat(new ProxyHeartbeat(
+                proxyWithProxyState.Proxy.Id,
+                proxyWithProxyState.ProxyState.ReleaseKey,
+                proxyWithProxyState.ProxyState.NodeAddress,
+                proxyWithProxyState.ProxyState.LastReservationTime)) == false)
+        {
+            await _proxyReservationService.ReleaseProxy(
+                proxyWithProxyState.Proxy.Id,
+                proxyWithProxyState.ProxyState.ReleaseKey);
+            return null;
+        }
+
+        return proxyWithProxyState;
     }
 
-    // public override async Task<TakeProxyResponse> TakeProxy(
-    //     TakeProxyRequest request,
-    //     ServerCallContext context
-    // )
-    // {
-    //     if (
-    //         string.IsNullOrEmpty(request.NodeAddress)
-    //         || string.IsNullOrWhiteSpace(request.NodeAddress)
-    //     )
-    //         return new TakeProxyResponse
-    //         {
-    //             Proxy = null,
-    //             ErrorMessage = "Cannot take proxy without node address"
-    //         };
-    //
-    //     // var takenProxy = await _proxyStorageService.TryTakeProxy(request.NodeAddress);
-    //     // if (takenProxy is null)
-    //     // {
-    //     //     return new TakeProxyResponse { Proxy = null, ErrorMessage = "Failed to take proxy" };
-    //     // }
-    //
-    //     return new TakeProxyResponse { Proxy = takenProxy.ToTakenProxy() };
-    // }
+    public async Task<bool> ReleaseProxy(Guid proxyId, Guid releaseKey)
+    {
+        if (await _proxyReservationService.ReleaseProxy(proxyId, releaseKey) == false)
+        {
+            return false;
+        }
 
-    // public override async Task<ReleaseProxyResponse> ReleaseProxy(
-    //     ReleaseProxyRequest request,
-    //     ServerCallContext context
-    // )
-    // {
-    //     if (Guid.TryParse(request.ReleaseKey, out var releaseKey) == false)
-    //     {
-    //         return new ReleaseProxyResponse
-    //         {
-    //             OperationSuccessful = false,
-    //             ErrorMessage = "Cannot parse release key"
-    //         };
-    //     }
-    //
-    //     if (await _proxyStorageService.TryReleaseProxy(request.ProxyId, releaseKey) == false)
-    //     {
-    //         return new ReleaseProxyResponse
-    //         {
-    //             OperationSuccessful = false,
-    //             ErrorMessage = "Failed to release proxy"
-    //         };
-    //     }
-    //
-    //     return new ReleaseProxyResponse { OperationSuccessful = true };
-    // }
+        _proxyHeartbeatService.UnRegisterProxyHeartbeat(proxyId);
+        return true;
+    }
 }

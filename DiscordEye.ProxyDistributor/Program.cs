@@ -2,9 +2,10 @@ using DiscordEye.Infrastructure.Extensions;
 using DiscordEye.Infrastructure.Services.Lock;
 using DiscordEye.ProxyDistributor.FileManagers;
 using DiscordEye.ProxyDistributor.Mappers;
+using DiscordEye.ProxyDistributor.Services.Heartbeat;
 using DiscordEye.ProxyDistributor.Services.ProxyDistributor;
 using DiscordEye.ProxyDistributor.Services.ProxyReservation;
-using DiscordEye.ProxyDistributor.Services.ProxyVault;
+using DiscordEye.ProxyDistributor.Services.Vault;
 using VaultSharp;
 using VaultSharp.V1.AuthMethods.Token;
 using VaultSharp.V1.SecretsEngines.KeyValue.V2;
@@ -28,9 +29,8 @@ builder.Services.AddSingleton<IKeyValueSecretsEngineV2>(provider =>
 });
 builder.Services.AddSingleton<IProxyVaultService, ProxyVaultService>();
 builder.Services.AddSingleton<IProxyStateFileManager, ProxyStateFileManager>();
-
-// builder.Services.AddHostedService<ProxyHeartbeatBackgroundService>();
-
+builder.Services.AddSingleton<IProxyDistributorService, ProxyDistributorService>();
+builder.Services.AddSingleton<IProxyHeartbeatService, ProxyHeartbeatService>();
 builder.Services.AddSingleton<IProxyReservationService>(provider =>
 {
     var proxyVaultService = provider.GetRequiredService<IProxyVaultService>();
@@ -38,11 +38,11 @@ builder.Services.AddSingleton<IProxyReservationService>(provider =>
     var proxies = proxiesFromVault.Select(x => x.ToProxy()).ToArray();
     var locker = provider.GetRequiredService<KeyedLockService>();
     var proxyStateFileManager = provider.GetRequiredService<IProxyStateFileManager>();
-
+    
     return new ProxyReservationService(locker, proxies, proxyStateFileManager);
 });
 
 var app = builder.Build();
 
-app.MapGrpcService<ProxyDistributorService>();
+app.MapGrpcService<ProxyDistributorGrpcService>();
 app.Run();

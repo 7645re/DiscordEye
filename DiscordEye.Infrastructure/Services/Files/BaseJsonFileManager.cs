@@ -7,16 +7,16 @@ public abstract class BaseJsonFileManager<TData> : IFileManager<TData>
 {
     protected abstract string FilePath { get; }
 
-    public async Task Write(IEnumerable<TData> takerNodes)
+    public async Task Write(IEnumerable<TData> data)
     {
-        await File.WriteAllTextAsync(FilePath, JsonSerializer.Serialize(takerNodes));
+        await File.WriteAllTextAsync(FilePath, JsonSerializer.Serialize(data));
     }
 
-    public async Task Append(TData takerNode)
+    public async Task Append(TData data)
     {
         var takerNodes = await Read();
 
-        await Write(takerNodes.Append(takerNode));
+        await Write(takerNodes.Append(data));
     }
 
     public async Task<IReadOnlyCollection<TData>> Read()

@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordEye.Node", "DiscordE
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordEye.Infrastructure", "DiscordEye.Infrastructure\DiscordEye.Infrastructure.csproj", "{3D1E51DF-9C67-46D8-844F-F1951886BC55}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordEye.ProxyDistributor.Tests", "DiscordEye.ProxyDistributor.Tests\DiscordEye.ProxyDistributor.Tests.csproj", "{50B8D0BD-D5F9-49F2-9446-864E62EE6EA7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +38,9 @@ Global
 		{3D1E51DF-9C67-46D8-844F-F1951886BC55}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3D1E51DF-9C67-46D8-844F-F1951886BC55}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3D1E51DF-9C67-46D8-844F-F1951886BC55}.Release|Any CPU.Build.0 = Release|Any CPU
+		{50B8D0BD-D5F9-49F2-9446-864E62EE6EA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{50B8D0BD-D5F9-49F2-9446-864E62EE6EA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{50B8D0BD-D5F9-49F2-9446-864E62EE6EA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{50B8D0BD-D5F9-49F2-9446-864E62EE6EA7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

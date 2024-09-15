@@ -3,25 +3,22 @@ using DiscordEye.ProxyDistributor.Mappers;
 using VaultSharp.Core;
 using VaultSharp.V1.SecretsEngines.KeyValue.V2;
 
-namespace DiscordEye.ProxyDistributor.Services.ProxyVault;
+namespace DiscordEye.ProxyDistributor.Services.Vault;
 
 public class ProxyVaultService : IProxyVaultService
 {
     private const string ProxyPathPrefix = "proxy";
     private readonly IKeyValueSecretsEngineV2 _engine;
-    private readonly ILogger<ProxyVaultService> _logger;
         
     public ProxyVaultService(
-        IKeyValueSecretsEngineV2 engine,
-        ILogger<ProxyVaultService> logger)
+        IKeyValueSecretsEngineV2 engine)
     {
         _engine = engine;
-        _logger = logger;
     }
 
-    public async Task<Dto.ProxyVault[]> GetAllProxiesAsync()
-    {
-        var proxies = new List<Dto.ProxyVault>();
+    public async Task<ProxyVault[]> GetAllProxiesAsync()
+    { 
+        var proxies = new List<ProxyVault>();
         var proxyKeys = await GetProxyKeysAsync();
         foreach (var path in proxyKeys.Select(key => $"{ProxyPathPrefix}/{key}"))
         {
@@ -51,7 +48,7 @@ public class ProxyVaultService : IProxyVaultService
         }
     }
 
-    private async Task<Dto.ProxyVault?> GetProxyByPathAsync(string path, string mountPoint)
+    private async Task<ProxyVault?> GetProxyByPathAsync(string path, string mountPoint)
     {
         try
         {

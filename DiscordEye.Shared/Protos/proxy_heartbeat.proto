@@ -11,6 +11,6 @@ message ProxyHeartbeatResponse {
   string release_key = 1;
 }
 
-service ProxyHeartbeat {
+service ProxyHeartbeatGrpcService {
   rpc Heartbeat(ProxyHeartbeatRequest) returns (ProxyHeartbeatResponse) {}
 }

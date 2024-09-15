@@ -1,10 +1,10 @@
-using DiscordEye.ProxyDistributor.Data;
+using DiscordEye.ProxyDistributor.Dto;
 
 namespace DiscordEye.ProxyDistributor.Services.ProxyReservation;
 
 public interface IProxyReservationService
 {
-    IReadOnlyCollection<Proxy> GetProxies();
     Task<bool> ReleaseProxy(Guid proxyId, Guid releaseKey);
-    Task<Proxy?> ReserveProxy(string nodeAddress);
+    Task<ProxyWithProxyState?> ReserveProxy(string nodeAddress);
+    Task<bool> ProlongProxy(Guid proxyId, DateTime newDateTime);
 }

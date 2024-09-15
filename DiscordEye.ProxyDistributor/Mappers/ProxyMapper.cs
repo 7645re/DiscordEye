@@ -55,4 +55,25 @@ public static class ProxyMapper
             proxyVault.Password);
     }
 
+    public static ReservedProxyGrpc ToReservedProxy(this ProxyWithProxyState proxyWithProxyState)
+    {
+        return new ReservedProxyGrpc
+        {
+            Id = proxyWithProxyState.Proxy.Id.ToString(),
+            Address = proxyWithProxyState.Proxy.Address,
+            Port = proxyWithProxyState.Proxy.Port,
+            Login = proxyWithProxyState.Proxy.Login,
+            Password = proxyWithProxyState.Proxy.Password,
+            ReleaseKey = proxyWithProxyState.ProxyState.ReleaseKey.ToString()
+        };
+    }
+
+    public static ProxyHeartbeat ToProxyHeartbeat(this ProxyState proxyState, Guid proxyId)
+    {
+        return new ProxyHeartbeat(
+            proxyId,
+            proxyState.ReleaseKey,
+            proxyState.NodeAddress,
+            proxyState.LastReservationTime);
+    }
 }
