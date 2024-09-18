@@ -1,4 +1,5 @@
 using DiscordEye.ProxyDistributor.Dto;
+using DiscordEye.ProxyDistributor.Mappers;
 using DiscordEye.ProxyDistributor.Services.Heartbeat;
 using DiscordEye.ProxyDistributor.Services.ProxyReservation;
 
@@ -25,15 +26,17 @@ public class ProxyDistributorService : IProxyDistributorService
             return null;
         }
 
-        if (_proxyHeartbeatService.RegisterProxyHeartbeat(new ProxyHeartbeat(
-                proxyWithProxyState.Proxy.Id,
-                proxyWithProxyState.ProxyState.ReleaseKey,
-                proxyWithProxyState.ProxyState.NodeAddress,
-                proxyWithProxyState.ProxyState.LastReservationTime)) == false)
+        var proxyHeartbeat = proxyWithProxyState.ToProxyHeartbeat();
+        if (_proxyHeartbeatService.RegisterProxyHeartbeat(proxyHeartbeat) == false)
         {
-            await _proxyReservationService.ReleaseProxy(
-                proxyWithProxyState.Proxy.Id,
-                proxyWithProxyState.ProxyState.ReleaseKey);
+            var releaseProxyResult = await _proxyReservationService.ReleaseProxy(
+                    proxyWithProxyState.Proxy.Id,
+                    proxyWithProxyState.ProxyState.ReleaseKey);
+            if (!releaseProxyResult)
+            {
+                //TODO: Log
+            }
+            
             return null;
         }
 
@@ -47,7 +50,11 @@ public class ProxyDistributorService : IProxyDistributorService
             return false;
         }
 
-        _proxyHeartbeatService.UnRegisterProxyHeartbeat(proxyId);
+        if (_proxyHeartbeatService.UnRegisterProxyHeartbeat(proxyId) == false)
+        {
+            //TODO: Log
+        }
+        
         return true;
     }
 }

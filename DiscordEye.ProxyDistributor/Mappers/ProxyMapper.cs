@@ -68,12 +68,12 @@ public static class ProxyMapper
         };
     }
 
-    public static ProxyHeartbeat ToProxyHeartbeat(this ProxyState proxyState, Guid proxyId)
+    public static ProxyHeartbeat ToProxyHeartbeat(this ProxyWithProxyState proxyWithProxyState)
     {
         return new ProxyHeartbeat(
-            proxyId,
-            proxyState.ReleaseKey,
-            proxyState.NodeAddress,
-            proxyState.LastReservationTime);
+            proxyWithProxyState.Proxy.Id,
+            proxyWithProxyState.ProxyState.ReleaseKey,
+            proxyWithProxyState.ProxyState.NodeAddress,
+            proxyWithProxyState.ProxyState.LastReservationTime);
     }
 }

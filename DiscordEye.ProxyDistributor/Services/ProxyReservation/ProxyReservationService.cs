@@ -1,90 +1,131 @@
 using System.Collections.Concurrent;
-using System.Text.Json;
+using System.Collections.Immutable;
 using DiscordEye.Infrastructure.Services.Lock;
 using DiscordEye.ProxyDistributor.Data;
 using DiscordEye.ProxyDistributor.Dto;
-using DiscordEye.ProxyDistributor.FileManagers;
+using DiscordEye.ProxyDistributor.Mappers;
+using DiscordEye.ProxyDistributor.Services.ProxyStateSnapShooter;
+using DiscordEye.ProxyDistributor.Services.Vault;
 
 namespace DiscordEye.ProxyDistributor.Services.ProxyReservation;
 
 public class ProxyReservationService : IProxyReservationService
 {
-    private readonly IReadOnlyCollection<Proxy> _proxiesPool;
+    private readonly ConcurrentDictionary<Guid, Proxy> _proxiesById;
     private readonly ConcurrentQueue<Proxy> _proxiesQueue;
     private readonly KeyedLockService _locker;
-    private readonly IProxyStateFileManager _proxyStateFileManager;
     private readonly ConcurrentDictionary<Guid, ProxyState?> _proxiesStates;
     private readonly ConcurrentDictionary<string, Guid> _reservedProxyIdByNodeAddress;
+    private readonly IProxyStateSnapShooter _proxyStateSnapShooter;
+    private readonly IProxyVaultService _proxyVaultService;
     
     public ProxyReservationService(
         KeyedLockService locker,
-        Proxy[] proxiesPool,
-        IProxyStateFileManager proxyStateFileManager)
+        IProxyVaultService proxyVaultService,
+        IProxyStateSnapShooter proxyStateSnapShooter)
     {
         _locker = locker;
-        _proxiesPool = proxiesPool;
-        _proxyStateFileManager = proxyStateFileManager;
-        _proxiesQueue = new ConcurrentQueue<Proxy>(proxiesPool);
-        _reservedProxyIdByNodeAddress = new ConcurrentDictionary<string, Guid>();
-        _proxiesStates = new ConcurrentDictionary<Guid, ProxyState?>(proxiesPool
-            .Select(proxy => new
-            {
-                proxy, state = (ProxyState?)null
-            })
-            .ToDictionary(x => x.proxy.Id, x => x.state));
+        _proxyVaultService = proxyVaultService;
+        _proxyStateSnapShooter = proxyStateSnapShooter;
+        var loadedData = LoadData().GetAwaiter().GetResult();
+        _proxiesById = loadedData.proxiesById;
+        _proxiesQueue = loadedData.proxiesQueue;
+        _reservedProxyIdByNodeAddress = loadedData.reservedProxyIdByNodeAddress;
+        _proxiesStates = loadedData.proxiesStates;
     }
 
+    private async Task<(
+        ConcurrentDictionary<Guid, Proxy> proxiesById,
+        ConcurrentQueue<Proxy> proxiesQueue,
+        ConcurrentDictionary<string, Guid> reservedProxyIdByNodeAddress,
+        ConcurrentDictionary<Guid, ProxyState?> proxiesStates
+        )> LoadData()
+    {
+        var proxies = (await _proxyVaultService.GetAllProxiesAsync())
+            .Select(x => x.ToProxy())
+            .ToImmutableArray();
+        var proxiesStates = await _proxyStateSnapShooter.LoadSnapShotAsync();
+        var proxiesById = new ConcurrentDictionary<Guid, Proxy>(
+            proxies
+                .ToDictionary(keySelector: x => x.Id, elementSelector: x => x));
+        var proxiesQueue = new ConcurrentQueue<Proxy>(
+            proxies.Where(x => proxiesStates[x.Id] is null));
+        var reservedProxyIdByNodeAddress = new ConcurrentDictionary<string, Guid>(
+            proxiesStates
+            .Where(x => x.Value is not null)
+            .Select(
+                x => new KeyValuePair<string, Guid>(
+                    key: x.Value.NodeAddress, value: x.Key)));
+
+        return (
+            proxiesById,
+            proxiesQueue,
+            reservedProxyIdByNodeAddress,
+            new ConcurrentDictionary<Guid, ProxyState?>(proxiesStates));
+    }
+    
     public async Task<bool> ProlongProxy(Guid proxyId, DateTime newDateTime)
     {
-        var proxy = _proxiesPool.SingleOrDefault(x => x.Id == proxyId);
-        if (proxy is null)
+        if (!_proxiesById.TryGetValue(proxyId, out var proxy))
         {
             return false;
-        }
+        } 
 
         using (await _locker.LockAsync(GetProxyLockKey(proxy)))
         {
-            if (_proxiesStates.TryGetValue(proxyId, out var proxyState) == false
-                || proxyState is null)
+            var proxyState = GetProxyState(proxyId);
+            if (proxyState is null)
             {
                 return false;
             }
 
             var newProxyState = proxyState with { LastReservationTime = newDateTime };
             _proxiesStates.TryUpdate(proxy.Id, newProxyState, proxyState);
+            await _proxyStateSnapShooter.SnapShootAsync(_proxiesStates);
             
-            await CreateProxiesStatesSnapshot();
             return true;
         }
     }
     
     public async Task<bool> ReleaseProxy(Guid proxyId, Guid releaseKey)
     {
-        var proxy = _proxiesPool.SingleOrDefault(x => x.Id == proxyId);
-        if (proxy is null)
+        if (!_proxiesById.TryGetValue(proxyId, out var proxy))
         {
             return false;
-        }
+        } 
 
         using (await _locker.LockAsync(GetProxyLockKey(proxy)))
         {
-            if (_proxiesStates.TryGetValue(proxy.Id, out var proxyState) == false
-                || proxyState is null
-                || proxyState.ReleaseKey.Equals(releaseKey) == false)
+            var proxyState = GetProxyState(proxy.Id);
+            if (proxyState is null || proxyState.ReleaseKey.Equals(releaseKey) == false)
             {
                 return false;
             }
 
-            _proxiesStates.TryUpdate(proxy.Id, null, proxyState);
-            _proxiesQueue.Enqueue(proxy);
+            if (!_proxiesStates.TryUpdate(proxy.Id, null, proxyState))
+            {
+                return false;
+            }
+            await _proxyStateSnapShooter.SnapShootAsync(_proxiesStates);
             
-            await CreateProxiesStatesSnapshot();
+            _reservedProxyIdByNodeAddress.TryRemove(
+                new KeyValuePair<string, Guid>(
+                    proxyState.NodeAddress,
+                    proxyId));
+            
+            _proxiesQueue.Enqueue(proxy);
+
             return true;
         }
     }
 
     public async Task<ProxyWithProxyState?> ReserveProxy(string nodeAddress)
     {
+        if (_reservedProxyIdByNodeAddress.TryGetValue(nodeAddress, out _))
+        {
+            return null;
+        }
+        
         while (!_proxiesQueue.IsEmpty)
         {
             if (!_proxiesQueue.TryDequeue(out var proxy))
@@ -92,11 +133,13 @@ public class ProxyReservationService : IProxyReservationService
                 continue;
             }
 
-            var releaseKey = GenerateReleaseKey();
-            var proxyState = await ReserveProxyInternal(proxy, nodeAddress, releaseKey);
+            var proxyState = await ReserveProxyInternal(
+                proxy,
+                nodeAddress,
+                GenerateReleaseKey());
+
             if (proxyState == null)
             {
-                _proxiesQueue.Enqueue(proxy);
                 continue;
             }
             
@@ -110,34 +153,44 @@ public class ProxyReservationService : IProxyReservationService
     {
         using (await _locker.LockAsync(GetProxyLockKey(proxy)))
         {
-            if (_proxiesStates.TryGetValue(proxy.Id, out var existProxyState) == false
-                || existProxyState is not null)
+            var proxyState = GetProxyState(proxy.Id);
+
+            if (proxyState is not null)
             {
                 return null;
             }
-    
-            var proxyState = new ProxyState(
-                nodeAddress,
-                releaseKey,
-                DateTime.Now);
 
-            if (_proxiesStates.TryUpdate(proxy.Id, proxyState, null) == false)
+            if (!_reservedProxyIdByNodeAddress.TryAdd(nodeAddress, proxy.Id))
             {
                 return null;
             }
             
-            await CreateProxiesStatesSnapshot();
-            return proxyState;
+            var newProxyState = new ProxyState(
+                nodeAddress,
+                releaseKey,
+                DateTime.Now);
+            
+            if (_proxiesStates.TryUpdate(proxy.Id, newProxyState, proxyState) == false)
+            {
+                return null;
+            }
+            
+            await _proxyStateSnapShooter.SnapShootAsync(_proxiesStates);
+            return newProxyState;
         }
     }
-
-    //TODO: need to use file manager
-    private async Task CreateProxiesStatesSnapshot()
+    
+    private ProxyState? GetProxyState(Guid proxyId)
     {
-        await File.WriteAllTextAsync(Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
-                "Snapshots/proxiesStates.json"),
-            JsonSerializer.Serialize(_proxiesStates));
+        if (!_proxiesStates.TryGetValue(proxyId, out var proxyState))
+        {
+            throw new ArgumentException("Critical error, it should not be that there " +
+                                        "is no entry in the dictionary with the proxy ID key");
+        }
+
+        return proxyState;
     }
+    
     private static string GetProxyLockKey(Proxy proxy)
     {
         return "proxy_" + proxy.Id;
