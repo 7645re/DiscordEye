@@ -20,7 +20,8 @@ public static class StartupExtensions
         var port = Environment.GetEnvironmentVariable("ASPNETCORE_HTTP_PORTS");
         
         if (port is null)
-            throw new ArgumentException("Необходимо передать порт в переменную окружения ASPNETCORE_HTTP_PORTS");
+            throw new ArgumentException("You need to pass the port to " +
+                                        "the ASPNETCORE_HTTP_PORTS environment variable");
 
         return port;
     }
