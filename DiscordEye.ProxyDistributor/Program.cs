@@ -1,13 +1,18 @@
-using DiscordEye.ProxyDistributor.BackgroundServices;
-using DiscordEye.ProxyDistributor.Mappers;
+using DiscordEye.Infrastructure.Extensions;
+using DiscordEye.ProxyDistributor.Jobs;
+using DiscordEye.ProxyDistributor.Services.Heartbeat;
 using DiscordEye.ProxyDistributor.Services.ProxyDistributor;
-using DiscordEye.ProxyDistributor.Services.ProxyStorage;
-using DiscordEye.ProxyDistributor.Services.ProxyVault;
+using DiscordEye.ProxyDistributor.Services.ProxyReservation;
+using DiscordEye.ProxyDistributor.Services.SnapShoot;
+using DiscordEye.ProxyDistributor.Services.Vault;
+using Quartz;
 using VaultSharp;
 using VaultSharp.V1.AuthMethods.Token;
 using VaultSharp.V1.SecretsEngines.KeyValue.V2;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddCoreServices();
 
 builder.Services.AddGrpc();
 builder.Services.AddSingleton<IVaultClient>(_ =>
@@ -22,22 +27,27 @@ builder.Services.AddSingleton<IKeyValueSecretsEngineV2>(provider =>
     var vaultClient = provider.GetRequiredService<IVaultClient>();
     return vaultClient.V1.Secrets.KeyValue.V2;
 });
-builder.Services.AddSingleton<IProxyVaultService, ProxyVaultService>();
-
-builder.Services.AddHostedService<ProxyHeartbeatBackgroundService>();
-
-
-builder.Services.AddSingleton<IProxyStorageService>(provider =>
+builder.Services.AddQuartz(q =>
 {
-    var proxyVaultService = provider.GetRequiredService<IProxyVaultService>();
-    var proxiesFromVault = proxyVaultService.GetAllProxiesAsync().GetAwaiter().GetResult();
-    var proxies = proxiesFromVault.Select(x => x.ToProxy()).ToArray();
-    var logger = provider.GetRequiredService<ILogger<ProxyStorageService>>();
-    var serviceProvider = provider.GetRequiredService<IServiceProvider>();
-    return new ProxyStorageService(proxies, logger, serviceProvider);
+    var jobKey = new JobKey("ProxiesHeartbeatsJob");
+    q.AddJob<ProxiesHeartbeatsJob>(opts => opts.WithIdentity(jobKey));
+
+    q.AddTrigger(opts => opts
+        .ForJob(jobKey)
+        .WithIdentity("ProxiesHeartbeatsJob-trigger")
+        .WithSimpleSchedule(x => x
+            .WithIntervalInSeconds(10)
+            .RepeatForever()));
 });
+builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
+builder.Services.AddSingleton<IProxyStateSnapShooter, ProxyStateSnapShooter>();
+builder.Services.AddSingleton<IProxyHeartbeatSnapShooter, ProxyHeartbeatSnapShooter>();
+builder.Services.AddSingleton<IProxyVaultService, ProxyVaultService>();
+builder.Services.AddSingleton<IProxyDistributorService, ProxyDistributorService>();
+builder.Services.AddSingleton<IProxyHeartbeatService, ProxyHeartbeatService>();
+builder.Services.AddSingleton<IProxyReservationService, ProxyReservationService>();
 
 var app = builder.Build();
 
-app.MapGrpcService<ProxyDistributorService>();
+app.MapGrpcService<ProxyDistributorGrpcService>();
 app.Run();

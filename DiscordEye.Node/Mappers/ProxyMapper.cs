@@ -6,29 +6,29 @@ namespace DiscordEye.Node.Mappers;
 
 public static class ProxyMapper
 {
-    public static WebProxy ToWebProxy(this TakenProxy takenProxy)
+    public static WebProxy ToWebProxy(this ReservedProxyGrpc reservedProxyGrpc)
     {
         return new WebProxy
         {
-            Address = new Uri($"http://{takenProxy.Address}:{takenProxy.Port}"),
+            Address = new Uri($"http://{reservedProxyGrpc.Address}:{reservedProxyGrpc.Port}"),
             Credentials = new NetworkCredential
             {
-                Password = takenProxy.Password,
-                UserName = takenProxy.Login
+                Password = reservedProxyGrpc.Password,
+                UserName = reservedProxyGrpc.Login
             }
         };
     }
 
-    public static Proxy ToProxy(this TakenProxy takenProxy)
+    public static Proxy ToProxy(this ReservedProxyGrpc reservedProxyGrpc)
     {
         return new Proxy
         {
-            Id = takenProxy.Id,
-            Address = takenProxy.Address,
-            Port = takenProxy.Port,
-            Login = takenProxy.Login,
-            Password = takenProxy.Password,
-            ReleaseKey = Guid.Parse(takenProxy.ReleaseKey)
+            Id = Guid.Parse(reservedProxyGrpc.Id),
+            Address = reservedProxyGrpc.Address,
+            Port = reservedProxyGrpc.Port,
+            Login = reservedProxyGrpc.Login,
+            Password = reservedProxyGrpc.Password,
+            ReleaseKey = Guid.Parse(reservedProxyGrpc.ReleaseKey)
         };
     }
 }

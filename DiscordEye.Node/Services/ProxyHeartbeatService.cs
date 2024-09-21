@@ -4,7 +4,7 @@ using Grpc.Core;
 
 namespace DiscordEye.Node.Services;
 
-public class ProxyHeartbeatService : ProxyHeartbeat.ProxyHeartbeatBase
+public class ProxyHeartbeatService : ProxyHeartbeatGrpcService.ProxyHeartbeatGrpcServiceBase
 {
     private readonly IDiscordRequestClient _discordRequestClient;
 

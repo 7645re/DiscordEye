@@ -1,69 +1,51 @@
+using DiscordEye.ProxyDistributor.Dto;
 using DiscordEye.ProxyDistributor.Mappers;
-using DiscordEye.ProxyDistributor.Services.ProxyStorage;
-using Grpc.Core;
+using DiscordEye.ProxyDistributor.Services.Heartbeat;
+using DiscordEye.ProxyDistributor.Services.ProxyReservation;
 
 namespace DiscordEye.ProxyDistributor.Services.ProxyDistributor;
 
-public class ProxyDistributorService 
-    : DiscordEye.ProxyDistributor.ProxyDistributorService.ProxyDistributorServiceBase
+public class ProxyDistributorService : IProxyDistributorService
 {
-    private readonly IProxyStorageService _proxyStorageService;
+    private readonly IProxyReservationService _proxyReservationService;
+    private readonly IProxyHeartbeatService _proxyHeartbeatService;
 
-    public ProxyDistributorService(IProxyStorageService proxyStorageService)
+    public ProxyDistributorService(
+        IProxyReservationService proxyReservationService,
+        IProxyHeartbeatService proxyHeartbeatService)
     {
-        _proxyStorageService = proxyStorageService;
+        _proxyReservationService = proxyReservationService;
+        _proxyHeartbeatService = proxyHeartbeatService;
+    }
+    
+    public async Task<ProxyWithProxyState?> ReserveProxy(string nodeAddress)
+    {
+        var proxyWithProxyState = await _proxyReservationService.ReserveProxy(nodeAddress);
+        if (proxyWithProxyState == null)
+        {
+            return null;
+        }
+
+        var proxyHeartbeat = proxyWithProxyState.ToProxyHeartbeat();
+        if (await _proxyHeartbeatService.RegisterProxyHeartbeat(proxyHeartbeat) == false)
+        {
+            await _proxyReservationService.ReleaseProxy(
+                    proxyWithProxyState.Proxy.Id,
+                    proxyWithProxyState.ProxyState.ReleaseKey);
+            return null;
+        }
+
+        return proxyWithProxyState;
     }
 
-    public override Task<GetProxiesResponse> GetProxies(GetProxiesRequest request, ServerCallContext context)
+    public async Task<bool> ReleaseProxy(Guid proxyId, Guid releaseKey)
     {
-        var proxies = _proxyStorageService.GetProxies();
-        return Task.FromResult(new GetProxiesResponse
+        if (await _proxyReservationService.ReleaseProxy(proxyId, releaseKey) == false)
         {
-            Proxies = { proxies.Select(x => x.ToProxyGrpc()) }
-        });
-    }
+            return false;
+        }
 
-    public override Task<TakeProxyResponse> TakeProxy(TakeProxyRequest request, ServerCallContext context)
-    {
-        if (string.IsNullOrEmpty(request.NodeAddress) || string.IsNullOrWhiteSpace(request.NodeAddress))
-            return Task.FromResult(new TakeProxyResponse
-            {
-                Proxy = null,
-                ErrorMessage = "Cannot take proxy without node address"
-            });
-        
-        if (!_proxyStorageService.TryTakeProxy(request.NodeAddress, out var takenProxyWithKey))
-            return Task.FromResult(new TakeProxyResponse
-            {
-                Proxy = null,
-                ErrorMessage = "Failed to take proxy"
-            });
-
-        return Task.FromResult(new TakeProxyResponse
-        {
-            Proxy = takenProxyWithKey.Value.ToTakenProxy()
-        });
-    }
-
-    public override Task<ReleaseProxyResponse> ReleaseProxy(ReleaseProxyRequest request, ServerCallContext context)
-    {
-        if (!Guid.TryParse(request.ReleaseKey, out var releaseKey))
-            return Task.FromResult(new ReleaseProxyResponse
-            {
-                OperationSuccessful = false,
-                ErrorMessage = "Cannot parse release key"
-            });
-        
-        if (!_proxyStorageService.TryReleaseProxy(request.ProxyId, releaseKey))
-            return Task.FromResult(new ReleaseProxyResponse
-            {
-                OperationSuccessful = false,
-                ErrorMessage = "Failed to release proxy"
-            });
-        
-        return Task.FromResult(new ReleaseProxyResponse
-        {
-            OperationSuccessful = true
-        });
+        await _proxyHeartbeatService.UnRegisterProxyHeartbeat(proxyId);
+        return true;
     }
 }

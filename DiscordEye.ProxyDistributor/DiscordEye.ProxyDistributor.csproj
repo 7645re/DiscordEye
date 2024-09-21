@@ -8,7 +8,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Quartz.Extensions.DependencyInjection" Version="3.13.0" />
+        <PackageReference Include="Quartz.Extensions.Hosting" Version="3.13.0" />
         <PackageReference Include="Grpc.AspNetCore" Version="2.57.0" />
+        <PackageReference Include="Quartz" Version="3.13.0" />
         <PackageReference Include="VaultSharp" Version="1.13.0.1" />
     </ItemGroup>
 
@@ -22,7 +25,7 @@
             <Generator>MSBuild:Compile</Generator>
         </Protobuf>
     </ItemGroup>
-
+    
     <ItemGroup>
         <Protobuf Include="../DiscordEye.Shared/Protos/proxy_heartbeat.proto">
             <GrpcServices>Client</GrpcServices>
@@ -44,6 +47,7 @@
     </ItemGroup>
     
     <ItemGroup>
+      <ProjectReference Include="..\DiscordEye.Infrastructure\DiscordEye.Infrastructure.csproj" />
       <ProjectReference Include="..\DiscordEye.Shared\DiscordEye.Shared.csproj" />
     </ItemGroup>
 </Project>

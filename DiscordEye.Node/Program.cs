@@ -20,7 +20,7 @@ if (proxyDistributorUrl is null)
     throw new ArgumentException($"ProxyDistributorUrl is null, check appsettings.json file");
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.Configure<DiscordOptions>(builder.Configuration.GetRequiredSection("Discord"));
-builder.Services.AddGrpcClient<ProxyDistributorService.ProxyDistributorServiceClient>(opt =>
+builder.Services.AddGrpcClient<ProxyDistributorGrpcService.ProxyDistributorGrpcServiceClient>(opt =>
 {
     opt.Address = new Uri(proxyDistributorUrl);
 });

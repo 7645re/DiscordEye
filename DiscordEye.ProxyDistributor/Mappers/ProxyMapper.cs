@@ -5,16 +5,18 @@ namespace DiscordEye.ProxyDistributor.Mappers;
 
 public static class ProxyMapper
 {
-    public static bool TryToProxyDto(this IDictionary<string, object> data, out ProxyDto? proxyDto)
+    public static bool TryToProxyVault(this IDictionary<string, object> data, out ProxyVault? proxyVault)
     {
-        if (!data.TryGetValue("id", out var id)
-            || !int.TryParse(id.ToString(), out var parsedId)
+        if (
+            !data.TryGetValue("id", out var id)
+            || !Guid.TryParse(id.ToString(), out var parsedId)
             || !data.TryGetValue("address", out var address)
             || !data.TryGetValue("port", out var port)
             || !data.TryGetValue("login", out var login)
-            || !data.TryGetValue("password", out var password))
+            || !data.TryGetValue("password", out var password)
+        )
         {
-            proxyDto = null;
+            proxyVault = null;
             return false;
         }
 
@@ -23,74 +25,55 @@ public static class ProxyMapper
         var stringLogin = login.ToString();
         var stringPassword = password.ToString();
 
-        if (stringAddress is null
+        if (
+            stringAddress is null
             || stringPort is null
             || stringLogin is null
-            || stringPassword is null)
+            || stringPassword is null
+        )
         {
-            proxyDto = null;
+            proxyVault = null;
             return false;
         }
 
-        proxyDto = new ProxyDto(
+        proxyVault = new ProxyVault(
             parsedId,
             stringAddress,
             stringPort,
             stringLogin,
-            stringPassword,
-            null,
-            null,
-            true);
+            stringPassword);
         return true;
     }
-    
-    public static TakenProxy ToTakenProxy(this (Proxy proxy, Guid releaseKey) proxyWithKey)
-    {
-        return new TakenProxy
-        {
-            Id = proxyWithKey.proxy.Id,
-            Address = proxyWithKey.proxy.Address,
-            Port = proxyWithKey.proxy.Port,
-            Login = proxyWithKey.proxy.Login,
-            Password = proxyWithKey.proxy.Password,
-            ReleaseKey = proxyWithKey.releaseKey.ToString()
-        };
-    }
 
-    public static ProxyDto ToProxyDto(this Proxy proxy)
-    {
-        return new ProxyDto(
-            proxy.Id,
-            proxy.Address,
-            proxy.Port,
-            proxy.Login,
-            proxy.Password,
-            proxy.TakerAddress,
-            proxy.TakenDateTime,
-            proxy.IsFree());
-    }
-
-    public static Proxy ToProxy(this ProxyDto proxyDto)
+    public static Proxy ToProxy(this ProxyVault proxyVault)
     {
         return new Proxy(
-            proxyDto.Id,
-            proxyDto.Address,
-            proxyDto.Port,
-            proxyDto.Login,
-            proxyDto.Password);
+            proxyVault.Id,
+            proxyVault.Address,
+            proxyVault.Port,
+            proxyVault.Login,
+            proxyVault.Password);
     }
 
-    public static ProxyGrpc ToProxyGrpc(this ProxyDto proxyDto)
+    public static ReservedProxyGrpc ToReservedProxy(this ProxyWithProxyState proxyWithProxyState)
     {
-        return new ProxyGrpc
+        return new ReservedProxyGrpc
         {
-            Id = proxyDto.Id,
-            Address = proxyDto.Address,
-            Port = proxyDto.Port,
-            Login = proxyDto.Login,
-            Password = proxyDto.Password,
-            TakerAddress = proxyDto.TakerAddress ?? string.Empty,
-            IsFree = proxyDto.IsFree
+            Id = proxyWithProxyState.Proxy.Id.ToString(),
+            Address = proxyWithProxyState.Proxy.Address,
+            Port = proxyWithProxyState.Proxy.Port,
+            Login = proxyWithProxyState.Proxy.Login,
+            Password = proxyWithProxyState.Proxy.Password,
+            ReleaseKey = proxyWithProxyState.ProxyState.ReleaseKey.ToString()
         };
+    }
+
+    public static ProxyHeartbeat ToProxyHeartbeat(this ProxyWithProxyState proxyWithProxyState)
+    {
+        return new ProxyHeartbeat(
+            proxyWithProxyState.Proxy.Id,
+            proxyWithProxyState.ProxyState.ReleaseKey,
+            proxyWithProxyState.ProxyState.NodeAddress,
+            proxyWithProxyState.ProxyState.LastReservationTime);
     }
 }
