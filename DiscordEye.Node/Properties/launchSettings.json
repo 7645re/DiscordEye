@@ -6,7 +6,9 @@
       "dotnetRunMessages": true,
       "launchBrowser": false,
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DISCORD_TOKEN": "",
+        "ASPNETCORE_HTTP_PORTS": ""
       }
     },
     "https": {
