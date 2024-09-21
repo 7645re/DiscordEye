@@ -1,10 +1,10 @@
-using DiscordEye.ProxyDistributor.Dto;
+using DiscordEye.ProxyDistributor.Data;
 
 namespace DiscordEye.ProxyDistributor.Services.Heartbeat;
 
 public interface IProxyHeartbeatService
 {
-    bool RegisterProxyHeartbeat(ProxyHeartbeat proxyHeartbeat);
-    bool UnRegisterProxyHeartbeat(Guid proxyId);
+    Task<bool> RegisterProxyHeartbeat(ProxyHeartbeat proxyHeartbeat);
+    Task<bool> UnRegisterProxyHeartbeat(Guid proxyId);
     Task PulseProxiesHeartbeats();
 }

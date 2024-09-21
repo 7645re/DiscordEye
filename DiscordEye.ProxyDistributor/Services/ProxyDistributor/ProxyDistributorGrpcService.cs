@@ -3,7 +3,10 @@ using Grpc.Core;
 
 namespace DiscordEye.ProxyDistributor.Services.ProxyDistributor;
 
-public class ProxyDistributorGrpcService : DiscordEye.ProxyDistributor.ProxyDistributorGrpcService.ProxyDistributorGrpcServiceBase
+public class ProxyDistributorGrpcService : DiscordEye
+    .ProxyDistributor
+    .ProxyDistributorGrpcService
+    .ProxyDistributorGrpcServiceBase
 {
     private readonly IProxyDistributorService _proxyDistributorService;
 
@@ -21,7 +24,9 @@ public class ProxyDistributorGrpcService : DiscordEye.ProxyDistributor.ProxyDist
         };
     }
 
-    public override async Task<ReleaseProxyResponse> ReleaseProxy(ReleaseProxyRequest request, ServerCallContext context)
+    public override async Task<ReleaseProxyResponse> ReleaseProxy(
+        ReleaseProxyRequest request,
+        ServerCallContext context)
     {
         if (!Guid.TryParse(request.Id, out var parsedProxyId)
             || !Guid.TryParse(request.ReleaseKey, out var parsedReleaseKey))

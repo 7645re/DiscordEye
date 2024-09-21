@@ -12,22 +12,19 @@ namespace DiscordEye.Node.DiscordClientWrappers.RequestClient;
 
 public class DiscordRequestClient : IDiscordRequestClient
 {
-    private readonly ILogger<DiscordRequestClient> _logger;
     private DiscordSocketClient? _client;
-    private readonly ProxyDistributorService.ProxyDistributorServiceClient _proxyDistributorService;
     private readonly SemaphoreSlim _clientSemaphore = new(1,1);
-    private Proxy? _takenProxy;
+    private Proxy? _reservedProxy;
     private readonly string _port;
     private readonly string _token;
+    private readonly ProxyDistributorGrpcService.ProxyDistributorGrpcServiceClient _distributorGrpcServiceClient;
 
     public DiscordRequestClient(
-        ILogger<DiscordRequestClient> logger,
-        ProxyDistributorService.ProxyDistributorServiceClient proxyDistributorService)
+        ProxyDistributorGrpcService.ProxyDistributorGrpcServiceClient distributorGrpcServiceClient)
     {
         _token = StartupExtensions.GetDiscordTokenFromEnvironment();
         _port = StartupExtensions.GetPort();
-        _logger = logger;
-        _proxyDistributorService = proxyDistributorService;
+        _distributorGrpcServiceClient = distributorGrpcServiceClient;
         _client = InitClientAsync().GetAwaiter().GetResult();
     }
 
@@ -76,30 +73,31 @@ public class DiscordRequestClient : IDiscordRequestClient
         });
     }
 
-    private async Task<TakenProxy?> TakeProxyInLoopAsync(
+    private async Task<ReservedProxyGrpc?> ReserveProxyInLoopAsync(
         int retryCount = 0,
         int millisecondsDelay = 0)
     {
         var counter = 0;
         while (counter < retryCount)
         {
-            TakeProxyResponse? webProxyResponse = null; 
+            ReserveProxyResponse? reserveProxyResponse = null; 
             try
             {
-                webProxyResponse = await _proxyDistributorService.TakeProxyAsync(new TakeProxyRequest
-                {
-                    NodeAddress = $"localhost:{_port}"
-                });
+                reserveProxyResponse = await _distributorGrpcServiceClient.ReserveProxyAsync(
+                    new ReserveProxyRequest
+                    {
+                        NodeAddress = $"localhost:{_port}"
+                    });
             }
             catch (Exception e)
             {
+                // ignored
             }
 
-            if (webProxyResponse?.Proxy is not null)
-                return webProxyResponse.Proxy;
+            if (reserveProxyResponse?.ReservedProxy is not null)
+                return reserveProxyResponse.ReservedProxy;
 
             counter++;
-            if (millisecondsDelay == 0) continue;
             await Task.Delay(millisecondsDelay);
         }
 
@@ -108,7 +106,7 @@ public class DiscordRequestClient : IDiscordRequestClient
 
     private async Task<T?> RetryOnFailureUseProxyAsync<T>(
         Func<Task<T>> action,
-        int retryCount = 1,
+        int retryCount = 2,
         int millisecondDelay = 0)
     {
         var counter = 0;
@@ -121,7 +119,7 @@ public class DiscordRequestClient : IDiscordRequestClient
             }
             catch (CloudFlareException e)
             {
-                var proxy = await TakeProxyInLoopAsync(5, 2000);
+                var proxy = await ReserveProxyInLoopAsync(5, 2000);
                 if (proxy is null)
                     continue;
 
@@ -133,7 +131,7 @@ public class DiscordRequestClient : IDiscordRequestClient
                         await _client.DisposeAsync();
                     }
                     _client = await InitClientAsync(proxy.ToWebProxy());
-                    _takenProxy = proxy.ToProxy();
+                    _reservedProxy = proxy.ToProxy();
                     return Task.CompletedTask;
                 });
             }
@@ -169,13 +167,13 @@ public class DiscordRequestClient : IDiscordRequestClient
     
     public bool TryGetReleaseKey(out Guid? releaseKey)
     {
-        if (_takenProxy?.ReleaseKey is null)
+        if (_reservedProxy?.ReleaseKey is null)
         {
             releaseKey = null;
             return false;
         }
 
-        releaseKey = _takenProxy.ReleaseKey;
+        releaseKey = _reservedProxy.ReleaseKey;
         return true;
     }
 }

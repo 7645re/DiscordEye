@@ -27,16 +27,11 @@ public class ProxyDistributorService : IProxyDistributorService
         }
 
         var proxyHeartbeat = proxyWithProxyState.ToProxyHeartbeat();
-        if (_proxyHeartbeatService.RegisterProxyHeartbeat(proxyHeartbeat) == false)
+        if (await _proxyHeartbeatService.RegisterProxyHeartbeat(proxyHeartbeat) == false)
         {
-            var releaseProxyResult = await _proxyReservationService.ReleaseProxy(
+            await _proxyReservationService.ReleaseProxy(
                     proxyWithProxyState.Proxy.Id,
                     proxyWithProxyState.ProxyState.ReleaseKey);
-            if (!releaseProxyResult)
-            {
-                //TODO: Log
-            }
-            
             return null;
         }
 
@@ -50,11 +45,7 @@ public class ProxyDistributorService : IProxyDistributorService
             return false;
         }
 
-        if (_proxyHeartbeatService.UnRegisterProxyHeartbeat(proxyId) == false)
-        {
-            //TODO: Log
-        }
-        
+        await _proxyHeartbeatService.UnRegisterProxyHeartbeat(proxyId);
         return true;
     }
 }
