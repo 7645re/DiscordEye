@@ -1,4 +1,4 @@
-namespace DiscordEye.Node;
+namespace DiscordEye.Node.Data;
 
 public class StreamStartedRequest
 {

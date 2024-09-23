@@ -1,6 +1,8 @@
 using System.Threading.Channels;
 using Discord;
 using Discord.WebSocket;
+using DiscordEye.Node.Data;
+using DiscordEye.Node.Helpers;
 using DiscordEye.Node.Options;
 using DiscordEye.Shared.Events;
 using DiscordEye.Shared.Extensions;

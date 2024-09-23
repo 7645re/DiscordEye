@@ -1,6 +1,6 @@
 using Discord.API;
 using DiscordEye.DiscordListener;
-using DiscordEye.Node.Dto;
+using DiscordEye.Node.Data;
 
 namespace DiscordEye.Node.Mappers;
 

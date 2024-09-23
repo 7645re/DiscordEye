@@ -1,7 +1,7 @@
 using Discord.WebSocket;
 using DiscordEye.Shared.Events;
 
-namespace DiscordEye.Node;
+namespace DiscordEye.Node.Helpers;
 
 public static class DiscordHelper
 {

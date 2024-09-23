@@ -3,8 +3,9 @@ using Discord;
 using Discord.Net;
 using Discord.Net.Rest;
 using Discord.WebSocket;
-using DiscordEye.Node.Dto;
+using DiscordEye.Node.Data;
 using DiscordEye.Node.Mappers;
+using DiscordEye.Node.Services;
 using DiscordEye.ProxyDistributor;
 using DiscordEye.Shared.Extensions;
 
@@ -14,17 +15,17 @@ public class DiscordRequestClient : IDiscordRequestClient
 {
     private DiscordSocketClient? _client;
     private readonly SemaphoreSlim _clientSemaphore = new(1,1);
-    private Proxy? _reservedProxy;
-    private readonly string _port;
     private readonly string _token;
     private readonly ProxyDistributorGrpcService.ProxyDistributorGrpcServiceClient _distributorGrpcServiceClient;
+    private readonly IProxyHolderService _proxyHolderService;
 
     public DiscordRequestClient(
-        ProxyDistributorGrpcService.ProxyDistributorGrpcServiceClient distributorGrpcServiceClient)
+        ProxyDistributorGrpcService.ProxyDistributorGrpcServiceClient distributorGrpcServiceClient,
+        IProxyHolderService proxyHolderService)
     {
         _token = StartupExtensions.GetDiscordTokenFromEnvironment();
-        _port = StartupExtensions.GetPort();
         _distributorGrpcServiceClient = distributorGrpcServiceClient;
+        _proxyHolderService = proxyHolderService;
         _client = InitClientAsync().GetAwaiter().GetResult();
     }
 
@@ -73,29 +74,17 @@ public class DiscordRequestClient : IDiscordRequestClient
         });
     }
 
-    private async Task<ReservedProxyGrpc?> ReserveProxyInLoopAsync(
+    private async Task<Proxy?> ReserveProxyInLoopAsync(
         int retryCount = 0,
         int millisecondsDelay = 0)
     {
         var counter = 0;
         while (counter < retryCount)
         {
-            ReserveProxyResponse? reserveProxyResponse = null; 
-            try
-            {
-                reserveProxyResponse = await _distributorGrpcServiceClient.ReserveProxyAsync(
-                    new ReserveProxyRequest
-                    {
-                        NodeAddress = $"localhost:{_port}"
-                    });
-            }
-            catch (Exception e)
-            {
-                // ignored
-            }
+            var reservedProxy = await _proxyHolderService.ReserveProxyAndReleaseIfNeeded();
 
-            if (reserveProxyResponse?.ReservedProxy is not null)
-                return reserveProxyResponse.ReservedProxy;
+            if (reservedProxy is not null)
+                return reservedProxy;
 
             counter++;
             await Task.Delay(millisecondsDelay);
@@ -115,6 +104,10 @@ public class DiscordRequestClient : IDiscordRequestClient
             counter++;
             try
             {
+                if (new Random().Next(0, 2) == 1)
+                {
+                    throw new CloudFlareException();
+                }
                 return await ExecuteInClientSemaphoreAsync(async () => await action());
             }
             catch (CloudFlareException e)
@@ -131,7 +124,6 @@ public class DiscordRequestClient : IDiscordRequestClient
                         await _client.DisposeAsync();
                     }
                     _client = await InitClientAsync(proxy.ToWebProxy());
-                    _reservedProxy = proxy.ToProxy();
                     return Task.CompletedTask;
                 });
             }
@@ -163,17 +155,5 @@ public class DiscordRequestClient : IDiscordRequestClient
             throw exception;
 
         return default;
-    }
-    
-    public bool TryGetReleaseKey(out Guid? releaseKey)
-    {
-        if (_reservedProxy?.ReleaseKey is null)
-        {
-            releaseKey = null;
-            return false;
-        }
-
-        releaseKey = _reservedProxy.ReleaseKey;
-        return true;
     }
 }

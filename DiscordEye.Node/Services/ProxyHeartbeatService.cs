@@ -1,4 +1,4 @@
-using DiscordEye.Node.DiscordClientWrappers.RequestClient;
+using DiscordEye.Infrastructure.Services.Lock;
 using DiscordEye.ProxyDistributor;
 using Grpc.Core;
 
@@ -6,26 +6,26 @@ namespace DiscordEye.Node.Services;
 
 public class ProxyHeartbeatService : ProxyHeartbeatGrpcService.ProxyHeartbeatGrpcServiceBase
 {
-    private readonly IDiscordRequestClient _discordRequestClient;
+    private readonly KeyedLockService _lockService;
+    private readonly IProxyHolderService _proxyHolderService;
 
-    public ProxyHeartbeatService(IDiscordRequestClient discordRequestClient)
+    public ProxyHeartbeatService(
+        KeyedLockService lockService,
+        IProxyHolderService proxyHolderService)
     {
-        _discordRequestClient = discordRequestClient;
+        _lockService = lockService;
+        _proxyHolderService = proxyHolderService;
     }
 
-    public override Task<ProxyHeartbeatResponse> Heartbeat(ProxyHeartbeatRequest request, ServerCallContext context)
+    public override async Task<ProxyHeartbeatResponse> Heartbeat(ProxyHeartbeatRequest request, ServerCallContext context)
     {
-        if (!_discordRequestClient.TryGetReleaseKey(out var releaseKey))
+        using (await _lockService.LockAsync("ProxyHoldMutation"))
         {
-            return Task.FromResult(new ProxyHeartbeatResponse
+            var holdProxy = _proxyHolderService.GetCurrentHoldProxy();
+            return new ProxyHeartbeatResponse
             {
-                ReleaseKey = Guid.Empty.ToString()
-            });
+                ReleaseKey = holdProxy is null ? string.Empty : holdProxy.ReleaseKey.ToString()
+            };
         }
-
-        return Task.FromResult(new ProxyHeartbeatResponse
-        {
-            ReleaseKey = releaseKey?.ToString()
-        });
     }
 }

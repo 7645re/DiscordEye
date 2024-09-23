@@ -1,6 +1,6 @@
+using DiscordEye.Node.Data;
 using DiscordEye.Node.DiscordClientWrappers.EventClient;
 using DiscordEye.Node.DiscordClientWrappers.RequestClient;
-using DiscordEye.Node.Dto;
 
 namespace DiscordEye.Node.BackgroundServices;
 

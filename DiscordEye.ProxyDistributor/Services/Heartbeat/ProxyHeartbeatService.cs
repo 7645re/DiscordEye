@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
-using System.Net;
 using DiscordEye.Infrastructure.Services.Lock;
 using DiscordEye.ProxyDistributor.Data;
 using DiscordEye.ProxyDistributor.Services.ProxyReservation;
@@ -14,7 +13,6 @@ public class ProxyHeartbeatService : IProxyHeartbeatService
 {
     private readonly ConcurrentQueue<ProxyHeartbeat> _proxiesHeartbeatsQueue;
     private readonly ConcurrentDictionary<Guid, ProxyHeartbeat> _proxiesHeartbeats;
-    private readonly KeyedLockService _locker;
     private readonly TimeSpan _healthPulsePeriod = TimeSpan.FromSeconds(5);
     private readonly ConcurrentDictionary<string, GrpcChannel> _cachedGrpcChannel;
     private readonly IProxyReservationService _proxyReservationService;
@@ -22,12 +20,10 @@ public class ProxyHeartbeatService : IProxyHeartbeatService
     private readonly IProxyHeartbeatSnapShooter _snapShooter;
 
     public ProxyHeartbeatService(
-        KeyedLockService locker,
         IProxyReservationService proxyReservationService,
         ILogger<ProxyHeartbeatService> logger,
         IProxyHeartbeatSnapShooter snapShooter)
     {
-        _locker = locker;
         _proxyReservationService = proxyReservationService;
         _logger = logger;
         _snapShooter = snapShooter;
@@ -66,22 +62,19 @@ public class ProxyHeartbeatService : IProxyHeartbeatService
             return false;
         }
         
-        using (_locker.Lock(GetProxyHeartBeatLockKey(proxyHeartbeat)))
+        if (_proxiesHeartbeats.TryRemove(new KeyValuePair<Guid, ProxyHeartbeat>(
+                proxyId,
+                proxyHeartbeat)) == false)
         {
-            if (_proxiesHeartbeats.TryRemove(new KeyValuePair<Guid, ProxyHeartbeat>(
-                    proxyId,
-                    proxyHeartbeat)) == false)
-            {
-                _logger.LogWarning($"Error unregistering proxy {proxyId} " +
-                                   $"from heartbeat service {proxyHeartbeat}");
-                return false;
-            }
-
-            proxyHeartbeat.IsDead = true;
-            _logger.LogInformation($"Proxy {proxyId} marked as dead, unregistered from heartbeat service");
-            await _snapShooter.SnapShootAsync(_proxiesHeartbeats);
-            return true;
+            _logger.LogWarning($"Error unregistering proxy {proxyId} " +
+                               $"from heartbeat service {proxyHeartbeat}");
+            return false;
         }
+
+        proxyHeartbeat.IsDead = true;
+        _logger.LogInformation($"Proxy {proxyId} marked as dead, unregistered from heartbeat service");
+        await _snapShooter.SnapShootAsync(_proxiesHeartbeats);
+        return true;
     }
     
     //TODO: mb can parallel grpc calls
@@ -188,11 +181,6 @@ public class ProxyHeartbeatService : IProxyHeartbeatService
          return newChannel;
      }
      
-     private static string GetProxyHeartBeatLockKey(ProxyHeartbeat proxyHeartbeat)
-     {
-         return "proxyHeartbeat_" + proxyHeartbeat.ProxyId;
-     }
-
      private GrpcChannel? CreateGrpcChannel(string uri)
      {
          try

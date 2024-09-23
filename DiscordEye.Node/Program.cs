@@ -1,3 +1,4 @@
+using DiscordEye.Infrastructure.Extensions;
 using DiscordEye.Node.BackgroundServices;
 using DiscordEye.Node.DiscordClientWrappers.EventClient;
 using DiscordEye.Node.DiscordClientWrappers.RequestClient;
@@ -18,7 +19,7 @@ var kafkaOptions = builder
 var proxyDistributorUrl = builder.Configuration.GetValue<string>("ProxyDistributorUrl");
 if (proxyDistributorUrl is null)
     throw new ArgumentException($"ProxyDistributorUrl is null, check appsettings.json file");
-builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+builder.Services.AddCoreServices();
 builder.Services.Configure<DiscordOptions>(builder.Configuration.GetRequiredSection("Discord"));
 builder.Services.AddGrpcClient<ProxyDistributorGrpcService.ProxyDistributorGrpcServiceClient>(opt =>
 {
@@ -46,6 +47,7 @@ builder.Services.AddMassTransit(x =>
     });
 });
 builder.Services.AddGrpc();
+builder.Services.AddSingleton<IProxyHolderService, ProxyHolderService>();
 builder.Services.AddHostedService<DiscordFacadeBackgroundService>();
 builder.Services.AddSingleton<IDiscordEventClient, DiscordEventClient>();
 builder.Services.AddSingleton<IDiscordRequestClient, DiscordRequestClient>();
