@@ -18,14 +18,16 @@ public class DiscordRequestClient : IDiscordRequestClient
     private readonly string _token;
     private readonly ProxyDistributorGrpcService.ProxyDistributorGrpcServiceClient _distributorGrpcServiceClient;
     private readonly IProxyHolderService _proxyHolderService;
+    private readonly ILogger<DiscordRequestClient> _logger;
 
     public DiscordRequestClient(
         ProxyDistributorGrpcService.ProxyDistributorGrpcServiceClient distributorGrpcServiceClient,
-        IProxyHolderService proxyHolderService)
+        IProxyHolderService proxyHolderService, ILogger<DiscordRequestClient> logger)
     {
         _token = StartupExtensions.GetDiscordTokenFromEnvironment();
         _distributorGrpcServiceClient = distributorGrpcServiceClient;
         _proxyHolderService = proxyHolderService;
+        _logger = logger;
         _client = InitClientAsync().GetAwaiter().GetResult();
     }
 
@@ -81,6 +83,7 @@ public class DiscordRequestClient : IDiscordRequestClient
         var counter = 0;
         while (counter < retryCount)
         {
+            _logger.LogInformation($"Attempt number {counter + 1} proxy reservation");
             var reservedProxy = await _proxyHolderService.ReserveProxyAndReleaseIfNeeded();
 
             if (reservedProxy is not null)

@@ -49,6 +49,11 @@ public abstract class SnapShooterBase<T>
         try
         {
             var jsonData = await File.ReadAllTextAsync(filePath);
+            if (jsonData == string.Empty)
+            {
+                return default;
+            }
+            
             var data = JsonSerializer.Deserialize<T>(jsonData, _jsonSerializerOptions);
             _logger.LogInformation($"SnapShoot loaded from {_snapShootFile}");
             return data;
