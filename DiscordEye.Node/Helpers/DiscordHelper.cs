@@ -66,6 +66,6 @@ public static class DiscordHelper
             return UserVoiceChannelActionType.StreamStarted;
         }
 
-        throw new ArgumentException("Unknown event type");
+        return UserVoiceChannelActionType.Unknown;
     }
 }

@@ -44,7 +44,7 @@ public class ProxyHeartbeatService : IProxyHeartbeatService
 
     public async Task<bool> RegisterProxyHeartbeat(ProxyHeartbeat proxyHeartbeat)
     {
-        using (await _lockService.LockAsync("ProxyHeartbeat"))
+        using (await _lockService.LockAsync($"proxyHeartbeat"))
         {
             if (_proxiesHeartbeatsDict.TryAdd(proxyHeartbeat.ProxyId, proxyHeartbeat) == false)
             {
@@ -56,20 +56,21 @@ public class ProxyHeartbeatService : IProxyHeartbeatService
             _proxiesHeartbeatsLList.AddLast(proxyHeartbeat);
             _logger.LogInformation($"Proxy {proxyHeartbeat.ProxyId} registered to heartbeat service");
             await _snapShooter.SnapShootAsync(_proxiesHeartbeatsDict);
+
             return true;
         }
     }
 
     public async Task<bool> UnRegisterProxyHeartbeat(Guid proxyId)
     {
-        using (await _lockService.LockAsync("ProxyHeartbeat"))
+        using (await _lockService.LockAsync($"proxyHeartbeat"))
         {
             if (_proxiesHeartbeatsDict.TryGetValue(proxyId, out var proxyHeartbeat) == false)
             {
                 _logger.LogWarning($"Proxy {proxyId} not found in heartbeat service");
                 return false;
             }
-        
+    
             if (_proxiesHeartbeatsDict.TryRemove(new KeyValuePair<Guid, ProxyHeartbeat>(
                     proxyId,
                     proxyHeartbeat)) == false)
@@ -89,13 +90,21 @@ public class ProxyHeartbeatService : IProxyHeartbeatService
     //TODO: mb can parallel grpc calls
     public async Task PulseProxiesHeartbeats()
     {
-        using (await _lockService.LockAsync("ProxyHeartbeat"))
+        using (await _lockService.LockAsync($"proxyHeartbeat"))
         {
             _logger.LogInformation($"Pulsing {_proxiesHeartbeatsLList.Count} proxies heartbeats");
-            var proxyHeartbeatNode = _proxiesHeartbeatsLList.First;
-            while (proxyHeartbeatNode != null)
+            if (_proxiesHeartbeatsLList.Count == 0)
             {
-                var proxyHeartbeat = proxyHeartbeatNode.Value;
+                _logger.LogInformation($"No heartbeats to pulse");
+                return;
+            }
+
+            var heartbeatsForDelete = new List<ProxyHeartbeat>();
+            var heartbeatsForShift = new List<ProxyHeartbeat>();
+        
+            foreach (var proxyHeartbeat in _proxiesHeartbeatsLList)
+            {
+                _logger.LogInformation($"Pulsing proxy {proxyHeartbeat.ProxyId}");
                 if (DateTime.Now - proxyHeartbeat.LastHeartbeatDatetime < _healthPulsePeriod)
                 {
                     continue;
@@ -103,38 +112,54 @@ public class ProxyHeartbeatService : IProxyHeartbeatService
 
                 if (await PulseProxyHeartbeat(proxyHeartbeat) == false)
                 {
-                    _proxiesHeartbeatsDict.TryRemove(new KeyValuePair<Guid, ProxyHeartbeat>(
-                        proxyHeartbeat.ProxyId,
-                        proxyHeartbeat));
-                    _proxiesHeartbeatsLList.Remove(proxyHeartbeat);
-                    proxyHeartbeatNode = proxyHeartbeatNode.Next;
+                    heartbeatsForDelete.Add(proxyHeartbeat);
                     await _proxyReservationService.ReleaseProxy(proxyHeartbeat.ProxyId, proxyHeartbeat.ReleaseKey);
-                    await _snapShooter.SnapShootAsync(_proxiesHeartbeatsDict);
                     continue;
                 }
 
                 var newReservationDateTime = DateTime.Now + _healthPulsePeriod;
                 if (await _proxyReservationService.ProlongProxy(proxyHeartbeat.ProxyId, newReservationDateTime) == false)
                 {
-                    _proxiesHeartbeatsDict.TryRemove(new KeyValuePair<Guid, ProxyHeartbeat>(
-                        proxyHeartbeat.ProxyId,
-                        proxyHeartbeat));
-                    _proxiesHeartbeatsLList.Remove(proxyHeartbeat);
-                    proxyHeartbeatNode = proxyHeartbeatNode.Next;
+                    heartbeatsForDelete.Add(proxyHeartbeat);
                     await _proxyReservationService.ReleaseProxy(proxyHeartbeat.ProxyId, proxyHeartbeat.ReleaseKey);
-                    await _snapShooter.SnapShootAsync(_proxiesHeartbeatsDict);
                     continue;
                 }
 
                 var newHeartbeat = proxyHeartbeat with { LastHeartbeatDatetime = newReservationDateTime };
-                _proxiesHeartbeatsLList.Remove(proxyHeartbeat);
-                _proxiesHeartbeatsLList.AddLast(newHeartbeat);
-                proxyHeartbeatNode = proxyHeartbeatNode.Next;
+                heartbeatsForDelete.Add(proxyHeartbeat);
+                heartbeatsForShift.Add(newHeartbeat);
                 _logger.LogInformation($"Pulsed proxy {proxyHeartbeat.ProxyId}");
             }
+
+            DeleteDeadHeartbeats(heartbeatsForDelete);
+            ShiftHeartbeatsToEnd(heartbeatsForShift);
+        
+            await _snapShooter.SnapShootAsync(_proxiesHeartbeatsDict);
         }
     }
 
+    private void DeleteDeadHeartbeats(List<ProxyHeartbeat> heartbeatsForDelete)
+    {
+        foreach (var proxyHeartbeat in heartbeatsForDelete)
+        {
+            _proxiesHeartbeatsDict.TryRemove(new KeyValuePair<Guid, ProxyHeartbeat>(
+                proxyHeartbeat.ProxyId, proxyHeartbeat));
+            _proxiesHeartbeatsLList.Remove(proxyHeartbeat);
+        }
+        _logger.LogInformation($"{heartbeatsForDelete.Count} proxies were deleted");
+    }
+
+    private void ShiftHeartbeatsToEnd(List<ProxyHeartbeat> heartbeatsForShift)
+    {
+        foreach (var proxyHeartbeat in heartbeatsForShift)
+        {
+            _proxiesHeartbeatsLList.Remove(proxyHeartbeat);
+            _proxiesHeartbeatsLList.AddLast(proxyHeartbeat);
+            _proxiesHeartbeatsDict.TryAdd(proxyHeartbeat.ProxyId, proxyHeartbeat);
+        }
+        _logger.LogInformation($"{heartbeatsForShift.Count} proxies were shifted to end");
+    }
+    
     private async Task<bool> PulseProxyHeartbeat(ProxyHeartbeat proxyHeartbeat)
     {
         var grpcChannel = GetOrCreateGrpcChannel(proxyHeartbeat.NodeAddress);

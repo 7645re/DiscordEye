@@ -71,19 +71,19 @@ public class ProxyReservationService : IProxyReservationService
     
     public async Task<bool> ProlongProxy(Guid proxyId, DateTime newDateTime)
     {
-        _logger.LogInformation($"Prolonging proxy {proxyId} to {newDateTime}");
-        if (!_proxiesById.TryGetValue(proxyId, out var proxy))
+        using (await _locker.LockAsync(GetProxyLockKey(proxyId)))
         {
-            _logger.LogWarning($"Proxy with ID {proxyId} not found");
-            return false;
-        } 
+            _logger.LogInformation($"Prolonging proxy {proxyId} to {newDateTime}");
+            if (!_proxiesById.TryGetValue(proxyId, out var proxy))
+            {
+                _logger.LogWarning($"Proxy {proxyId} not found");
+                return false;
+            } 
 
-        using (await _locker.LockAsync(GetProxyLockKey(proxy)))
-        {
             var proxyState = GetProxyState(proxyId);
             if (proxyState is null)
             {
-                _logger.LogWarning($"Proxy state for proxy with ID {proxyId} not found");
+                _logger.LogWarning($"Proxy state {proxyId} not found");
                 return false;
             }
 
@@ -91,46 +91,46 @@ public class ProxyReservationService : IProxyReservationService
             _proxiesStates.TryUpdate(proxy.Id, newProxyState, proxyState);
             _logger.LogInformation($"Proxy {proxyId} prolonged to {newDateTime}");
             await _snapShooter.SnapShootAsync(_proxiesStates);
-            
+        
             return true;
         }
     }
     
     public async Task<bool> ReleaseProxy(Guid proxyId, Guid releaseKey)
     {
-        if (!_proxiesById.TryGetValue(proxyId, out var proxy))
+        using (await _locker.LockAsync(GetProxyLockKey(proxyId)))
         {
-            _logger.LogWarning($"Proxy with ID {proxyId} not found");
-            return false;
-        } 
+            if (!_proxiesById.TryGetValue(proxyId, out var proxy))
+            {
+                _logger.LogWarning($"Proxy {proxyId} not found");
+                return false;
+            } 
 
-        using (await _locker.LockAsync(GetProxyLockKey(proxy)))
-        {
             var proxyState = GetProxyState(proxy.Id);
             if (proxyState is null)
             {
-                _logger.LogWarning($"Proxy with ID {proxyId} not reserved");
+                _logger.LogWarning($"Proxy {proxyId} not reserved");
                 return false;
             }
-            
+        
             if (proxyState.ReleaseKey.Equals(releaseKey) == false)
             {
-                _logger.LogWarning($"Release key for proxy with ID {proxyId} not valid");
+                _logger.LogWarning($"Release key for proxy {proxyId} not valid");
                 return false;
             }
 
             if (!_proxiesStates.TryUpdate(proxy.Id, null, proxyState))
             {
-                _logger.LogWarning($"Attempt to release proxy with ID {proxyId} failed");
+                _logger.LogWarning($"Attempt to release proxy {proxyId} failed");
                 return false;
             }
             await _snapShooter.SnapShootAsync(_proxiesStates);
-            
+        
             _reservedProxyIdByNodeAddress.TryRemove(
                 new KeyValuePair<string, Guid>(
                     proxyState.NodeAddress,
                     proxyId));
-            
+        
             _proxiesQueue.Enqueue(proxy);
             _logger.LogInformation($"Proxy {proxyId} released");
             return true;
@@ -170,36 +170,36 @@ public class ProxyReservationService : IProxyReservationService
 
     private async Task<ProxyState?> ReserveProxyInternal(Proxy proxy, string nodeAddress, Guid releaseKey)
     {
-        using (await _locker.LockAsync(GetProxyLockKey(proxy)))
+        using (await _locker.LockAsync(GetProxyLockKey(proxy.Id)))
         {
             var proxyState = GetProxyState(proxy.Id);
 
             if (proxyState is not null)
             {
-                _logger.LogWarning($"Proxy with ID {proxy.Id} already reserved");
+                _logger.LogWarning($"Proxy {proxy.Id} already reserved");
                 return null;
             }
 
             if (!_reservedProxyIdByNodeAddress.TryAdd(nodeAddress, proxy.Id))
             {
-                _logger.LogWarning($"Error while binding proxy with ID {proxy.Id} to {nodeAddress}");
+                _logger.LogWarning($"Error while binding proxy {proxy.Id} to {nodeAddress}");
                 return null;
             }
-            
+        
             var newProxyState = new ProxyState(
                 nodeAddress,
                 releaseKey,
                 DateTime.Now);
-            
+        
             if (_proxiesStates.TryUpdate(proxy.Id, newProxyState, proxyState) == false)
             {
                 _logger.LogWarning($"Error while updating proxy state with ID {proxy.Id}");
                 return null;
             }
-            
+        
             await _snapShooter.SnapShootAsync(_proxiesStates);
-            _logger.LogInformation($"Proxy with ID {proxy.Id} reserved for {nodeAddress}");
-            return newProxyState;
+            _logger.LogInformation($"Proxy {proxy.Id} reserved for {nodeAddress}");
+            return newProxyState;   
         }
     }
     
@@ -214,9 +214,9 @@ public class ProxyReservationService : IProxyReservationService
         return proxyState;
     }
     
-    private static string GetProxyLockKey(Proxy proxy)
+    private static string GetProxyLockKey(Guid guidId)
     {
-        return "proxyReservation_" + proxy.Id;
+        return "proxy_" + guidId;
     }
     
     private static Guid GenerateReleaseKey()

@@ -11,5 +11,6 @@ public enum UserVoiceChannelActionType
     Deafened,
     Undeafened,
     VideoEnabled,
-    VideoDisabled
+    VideoDisabled,
+    Unknown
 }
