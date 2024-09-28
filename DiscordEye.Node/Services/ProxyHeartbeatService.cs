@@ -1,4 +1,3 @@
-using DiscordEye.Infrastructure.Services.Lock;
 using DiscordEye.ProxyDistributor;
 using Grpc.Core;
 
@@ -6,14 +5,10 @@ namespace DiscordEye.Node.Services;
 
 public class ProxyHeartbeatService : ProxyHeartbeatGrpcService.ProxyHeartbeatGrpcServiceBase
 {
-    private readonly KeyedLockService _lockService;
     private readonly IProxyHolderService _proxyHolderService;
 
-    public ProxyHeartbeatService(
-        KeyedLockService lockService,
-        IProxyHolderService proxyHolderService)
+    public ProxyHeartbeatService(IProxyHolderService proxyHolderService)
     {
-        _lockService = lockService;
         _proxyHolderService = proxyHolderService;
     }
 

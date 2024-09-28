@@ -8,7 +8,7 @@ using VaultSharp.V1.SecretsEngines.KeyValue.V2;
 
 namespace DiscordEye.ProxyDistributor.Extensions;
 
-public static class RegistrationExtensions
+public static class ServiceCollectionExtensions
 {
     public static WebApplicationBuilder AddLogger(this WebApplicationBuilder builder)
     {

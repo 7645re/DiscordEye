@@ -1,4 +1,3 @@
-using DiscordEye.Infrastructure.Services.Lock;
 using DiscordEye.Node.Data;
 using DiscordEye.Node.Mappers;
 using DiscordEye.ProxyDistributor;
@@ -10,18 +9,15 @@ public class ProxyHolderService : IProxyHolderService
 {
     private readonly ProxyDistributorGrpcService.ProxyDistributorGrpcServiceClient _distributorGrpcServiceClient;
     private Proxy? _holdProxy;
-    private readonly KeyedLockService _lockService;
     private readonly string _address = $"localhost:{StartupExtensions.GetPort()}";
     private readonly ILogger<ProxyHolderService> _logger;
 
     public ProxyHolderService(
         ProxyDistributorGrpcService.ProxyDistributorGrpcServiceClient distributorGrpcServiceClient,
-        ILogger<ProxyHolderService> logger,
-        KeyedLockService lockService)
+        ILogger<ProxyHolderService> logger)
     {
         _distributorGrpcServiceClient = distributorGrpcServiceClient;
         _logger = logger;
-        _lockService = lockService;
     }
 
     public Proxy? GetCurrentHoldProxy()

@@ -6,7 +6,6 @@ using Discord.WebSocket;
 using DiscordEye.Node.Data;
 using DiscordEye.Node.Mappers;
 using DiscordEye.Node.Services;
-using DiscordEye.ProxyDistributor;
 using DiscordEye.Shared.Extensions;
 
 namespace DiscordEye.Node.DiscordClientWrappers.RequestClient;
@@ -16,16 +15,14 @@ public class DiscordRequestClient : IDiscordRequestClient
     private DiscordSocketClient? _client;
     private readonly SemaphoreSlim _clientSemaphore = new(1,1);
     private readonly string _token;
-    private readonly ProxyDistributorGrpcService.ProxyDistributorGrpcServiceClient _distributorGrpcServiceClient;
     private readonly IProxyHolderService _proxyHolderService;
     private readonly ILogger<DiscordRequestClient> _logger;
 
     public DiscordRequestClient(
-        ProxyDistributorGrpcService.ProxyDistributorGrpcServiceClient distributorGrpcServiceClient,
-        IProxyHolderService proxyHolderService, ILogger<DiscordRequestClient> logger)
+        IProxyHolderService proxyHolderService,
+        ILogger<DiscordRequestClient> logger)
     {
         _token = StartupExtensions.GetDiscordTokenFromEnvironment();
-        _distributorGrpcServiceClient = distributorGrpcServiceClient;
         _proxyHolderService = proxyHolderService;
         _logger = logger;
         _client = InitClientAsync().GetAwaiter().GetResult();
@@ -48,29 +45,20 @@ public class DiscordRequestClient : IDiscordRequestClient
         await client.StartAsync();
         return client;
     }
-
-    private void ThrowIfClientNotInitialized()
-    {
-        if (_client is null)
-            throw new ArgumentException($"{nameof(DiscordSocketClient)} not initialize");
-    }
     
     public async Task<DiscordUser?> GetUserAsync(ulong id)
     {
         return await RetryOnFailureUseProxyAsync(async () =>
         {
-            ThrowIfClientNotInitialized();
             var userProfile = await _client?.Rest.GetUserProfileAsync(id);
             return userProfile?.ToDiscordUser();
         }, retryCount: 2);
     }
 
-    // TODO: sync execution in task [refactor]
     public async Task<DiscordGuild?> GetGuildAsync(ulong id)
     {
         return await RetryOnFailureUseProxyAsync(() =>
         {
-            ThrowIfClientNotInitialized();
             var guild = _client?.GetGuild(id);
             return Task.FromResult(guild?.ToDiscordGuild());
         });
@@ -107,13 +95,9 @@ public class DiscordRequestClient : IDiscordRequestClient
             counter++;
             try
             {
-                if (new Random().Next(0, 2) == 1)
-                {
-                    throw new CloudFlareException();
-                }
                 return await ExecuteInClientSemaphoreAsync(async () => await action());
             }
-            catch (CloudFlareException e)
+            catch (CloudFlareException)
             {
                 var proxy = await ReserveProxyInLoopAsync(5, 2000);
                 if (proxy is null)

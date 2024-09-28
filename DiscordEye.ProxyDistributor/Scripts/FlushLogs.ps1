@@ -1,4 +1,4 @@
-$folderPath = Join-Path $PSScriptRoot "\logs"
+$folderPath = Join-Path $PSScriptRoot "\..\logs"
 
 if (Test-Path $folderPath) {
     Get-ChildItem -Path $folderPath -File | Remove-Item -Force
