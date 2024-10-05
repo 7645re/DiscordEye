@@ -4,6 +4,11 @@ namespace DiscordEye.Node.Services;
 
 public interface IProxyHolderService
 {
-    Task<Proxy?> ReserveProxyAndReleaseIfNeeded();
-    Proxy? GetCurrentHoldProxy();
+    Task<Proxy?> GetCurrentHoldProxy();
+    Task<Proxy?> ReserveProxy();
+    Task<bool> ReleaseProxy();
+    Task<Proxy?> ReserveProxyWithRetries(
+        int retryCount = 1,
+        int millisecondsDelay = 0,
+        CancellationToken cancellationToken = default);
 }

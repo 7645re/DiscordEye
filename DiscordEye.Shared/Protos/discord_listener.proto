@@ -8,6 +8,7 @@ enum DiscordChannelTypeGrpc {
   TEXT_CHANNEL = 0;
   VOICE_CHANNEL = 1;
   CATEGORY_CHANNEL = 2;
+  FORUM_CHANNEL = 3;
 }
 
 message DiscordChannelGrpc {
@@ -28,8 +29,7 @@ message DiscordGuildGrpc {
   string icon_url = 2;
   string name = 3;
   string owner_id = 4;
-  int32 member_count = 5;
-  repeated DiscordChannelGrpc channels = 6;
+  repeated DiscordChannelGrpc channels = 5;
 }
 
 message DiscordGuildGrpcResponse {
@@ -42,7 +42,7 @@ message DiscordGuildGrpcResponse {
 message DiscordUserGrpc {
   uint64 id = 1;
   string username = 2;
-  repeated DiscordGuildGrpcResponse guilds = 3;
+  repeated DiscordGuildGrpc guilds = 3;
 }
 
 message DiscordUserGrpcResponse {
@@ -54,7 +54,6 @@ message DiscordUserGrpcResponse {
 
 message DiscordUserGrpcRequest {
   uint64 user_id = 1;
-  bool with_guilds = 2;
 }
 
 message DiscordGuildGrpcRequest {

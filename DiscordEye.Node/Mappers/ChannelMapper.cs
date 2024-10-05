@@ -1,4 +1,4 @@
-using Discord.WebSocket;
+using Discord.Rest;
 using DiscordEye.DiscordListener;
 using DiscordEye.Node.Data;
 
@@ -6,13 +6,13 @@ namespace DiscordEye.Node.Mappers;
 
 public static class ChannelMapper
 {
-    public static DiscordChannel ToChannel(this SocketGuildChannel socketGuildChannel)
+    public static DiscordChannel ToChannel(this RestGuildChannel restGuildChannel)
     {
         return new DiscordChannel
         {
-            Id = socketGuildChannel.Id,
-            Name = socketGuildChannel.Name,
-            Type = socketGuildChannel.RecognizeChannelType()
+            Id = restGuildChannel.Id,
+            Name = restGuildChannel.Name,
+            Type = restGuildChannel.RecognizeChannelType()
         };
     }
 
@@ -26,13 +26,14 @@ public static class ChannelMapper
         };
     }
     
-    private static DiscordChannelType RecognizeChannelType(this SocketGuildChannel socketGuildChannel)
+    private static DiscordChannelType RecognizeChannelType(this RestGuildChannel restGuildChannel)
     {
-        return socketGuildChannel switch
+        return restGuildChannel switch
         {
-            SocketVoiceChannel => DiscordChannelType.VoiceChannel,
-            SocketTextChannel => DiscordChannelType.TextChannel,
-            SocketCategoryChannel => DiscordChannelType.CategoryChannel,
+            RestVoiceChannel => DiscordChannelType.VoiceChannel,
+            RestTextChannel => DiscordChannelType.TextChannel,
+            RestCategoryChannel => DiscordChannelType.CategoryChannel,
+            RestForumChannel => DiscordChannelType.ForumChannel,
             _ => throw new ArgumentException($"Unknown discord channel type")
         };
     }
@@ -44,6 +45,7 @@ public static class ChannelMapper
             DiscordChannelType.TextChannel => DiscordChannelTypeGrpc.TextChannel,
             DiscordChannelType.VoiceChannel => DiscordChannelTypeGrpc.VoiceChannel,
             DiscordChannelType.CategoryChannel => DiscordChannelTypeGrpc.CategoryChannel,
+            DiscordChannelType.ForumChannel => DiscordChannelTypeGrpc.ForumChannel,
             _ => throw new ArgumentOutOfRangeException()
         };
     }

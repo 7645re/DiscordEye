@@ -1,4 +1,4 @@
-using Discord.WebSocket;
+using Discord.Rest;
 using DiscordEye.DiscordListener;
 using DiscordEye.Node.Data;
 
@@ -6,17 +6,15 @@ namespace DiscordEye.Node.Mappers;
 
 public static class GuildMapper
 {
-    public static DiscordGuild ToDiscordGuild(this SocketGuild socketGuild)
+    public static DiscordGuild ToDiscordGuild(this RestGuild restGuild, List<RestGuildChannel> restGuildChannels)
     {
         return new DiscordGuild
         {
-            Id = socketGuild.Id,
-            Name = socketGuild.Name,
-            IconUrl = socketGuild.IconUrl,
-            OwnerId = socketGuild.OwnerId,
-            MemberCount = socketGuild.MemberCount,
-            Channels = socketGuild
-                .Channels
+            Id = restGuild.Id,
+            Name = restGuild.Name,
+            IconUrl = restGuild.IconUrl,
+            OwnerId = restGuild.OwnerId,
+            Channels = restGuildChannels
                 .Select(x => x.ToChannel())
                 .ToList()
         };
@@ -30,7 +28,6 @@ public static class GuildMapper
             IconUrl = discordGuild.IconUrl,
             Name = discordGuild.Name,
             OwnerId = discordGuild.OwnerId.ToString(),
-            MemberCount = discordGuild.MemberCount,
             Channels = { discordGuild
                 .Channels
                 .Select(x => x.ToDiscordChannelGrpc())

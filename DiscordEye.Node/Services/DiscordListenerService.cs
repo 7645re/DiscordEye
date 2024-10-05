@@ -1,25 +1,22 @@
 using DiscordEye.DiscordListener;
-using DiscordEye.Node.BackgroundServices;
+using DiscordEye.Node.DiscordClientWrappers.RequestClient;
 using DiscordEye.Node.Mappers;
-using DiscordEye.Shared.Extensions;
 using Grpc.Core;
 
 namespace DiscordEye.Node.Services;
 
 public class DiscordListenerService : DiscordListener.DiscordListener.DiscordListenerBase
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly IDiscordRequestClient _discordRequestClient;
 
-    public DiscordListenerService(IServiceProvider serviceProvider)
+    public DiscordListenerService(IDiscordRequestClient discordRequestClient)
     {
-        _serviceProvider = serviceProvider;
+        _discordRequestClient = discordRequestClient;
     }
     
     public override async Task<DiscordUserGrpcResponse> GetUser(DiscordUserGrpcRequest request, ServerCallContext context)
     {
-        // TODO: maybe set background service to field from service provider
-        var discordFacade = _serviceProvider.GetHostedService<DiscordFacadeBackgroundService>();
-        var discordUser = await discordFacade.GetUserAsync(request.UserId);
+        var discordUser = await _discordRequestClient.GetUserAsync(request.UserId);
         
         if (discordUser == null)
             return new DiscordUserGrpcResponse
@@ -33,10 +30,13 @@ public class DiscordListenerService : DiscordListener.DiscordListener.DiscordLis
         };
     }
 
-    public override async Task<DiscordGuildGrpcResponse> GetGuild(DiscordGuildGrpcRequest request, ServerCallContext context)
+    public override async Task<DiscordGuildGrpcResponse> GetGuild(
+        DiscordGuildGrpcRequest request,
+        ServerCallContext context)
     {
-        var discordFacade = _serviceProvider.GetHostedService<DiscordFacadeBackgroundService>();
-        var discordGuild = await discordFacade.GetGuildAsync(request.GuildId);
+        var discordGuild = await _discordRequestClient.GetGuildAsync(
+            request.GuildId,
+            request.WithChannels);
         
         if (discordGuild == null)
             return new DiscordGuildGrpcResponse

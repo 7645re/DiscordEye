@@ -5,5 +5,8 @@ namespace DiscordEye.Node.DiscordClientWrappers.RequestClient;
 public interface IDiscordRequestClient
 {
     Task<DiscordUser?> GetUserAsync(ulong id);
-    Task<DiscordGuild?> GetGuildAsync(ulong id);
+
+    Task<DiscordGuild?> GetGuildAsync(
+        ulong id,
+        bool withChannels = false);
 }

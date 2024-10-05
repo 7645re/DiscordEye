@@ -4,5 +4,6 @@ public enum DiscordChannelType
 {
     TextChannel,
     VoiceChannel,
-    CategoryChannel
+    CategoryChannel,
+    ForumChannel
 }

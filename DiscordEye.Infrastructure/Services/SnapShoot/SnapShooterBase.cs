@@ -1,6 +1,7 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
-namespace DiscordEye.ProxyDistributor.Services.SnapShoot;
+namespace DiscordEye.Infrastructure.Services.SnapShoot;
 
 public abstract class SnapShooterBase<T>
 {

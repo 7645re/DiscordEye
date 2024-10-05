@@ -1,34 +1,29 @@
+using System.Collections.Concurrent;
 using System.Net;
 using Discord;
-using Discord.Net;
 using Discord.Net.Rest;
+using Discord.Rest;
 using Discord.WebSocket;
 using DiscordEye.Node.Data;
 using DiscordEye.Node.Mappers;
-using DiscordEye.Node.Services;
 using DiscordEye.Shared.Extensions;
 
 namespace DiscordEye.Node.DiscordClientWrappers.RequestClient;
 
 public class DiscordRequestClient : IDiscordRequestClient
 {
-    private DiscordSocketClient? _client;
-    private readonly SemaphoreSlim _clientSemaphore = new(1,1);
+    private readonly DiscordSocketClient? _client;
     private readonly string _token;
-    private readonly IProxyHolderService _proxyHolderService;
-    private readonly ILogger<DiscordRequestClient> _logger;
+    private readonly ManualResetEventSlim _manualReset = new(true);
+    private readonly ConcurrentBag<Task> _requestsTasks = new();
 
-    public DiscordRequestClient(
-        IProxyHolderService proxyHolderService,
-        ILogger<DiscordRequestClient> logger)
+    public DiscordRequestClient()
     {
         _token = StartupExtensions.GetDiscordTokenFromEnvironment();
-        _proxyHolderService = proxyHolderService;
-        _logger = logger;
         _client = InitClientAsync().GetAwaiter().GetResult();
     }
 
-    public async Task<DiscordSocketClient> InitClientAsync(WebProxy? webProxy = null)
+    private async Task<DiscordSocketClient> InitClientAsync(WebProxy? webProxy = null)
     {
         var discordSocketConfig = new DiscordSocketConfig
         {
@@ -48,99 +43,38 @@ public class DiscordRequestClient : IDiscordRequestClient
     
     public async Task<DiscordUser?> GetUserAsync(ulong id)
     {
-        return await RetryOnFailureUseProxyAsync(async () =>
+        return await ExecuteRequest(async () =>
         {
-            var userProfile = await _client?.Rest.GetUserProfileAsync(id);
+            var userProfile = await _client.Rest.GetUserProfileAsync(id);
             return userProfile?.ToDiscordUser();
-        }, retryCount: 2);
-    }
-
-    public async Task<DiscordGuild?> GetGuildAsync(ulong id)
-    {
-        return await RetryOnFailureUseProxyAsync(() =>
-        {
-            var guild = _client?.GetGuild(id);
-            return Task.FromResult(guild?.ToDiscordGuild());
         });
     }
 
-    private async Task<Proxy?> ReserveProxyInLoopAsync(
-        int retryCount = 0,
-        int millisecondsDelay = 0)
+    public async Task<DiscordGuild?> GetGuildAsync(
+        ulong id,
+        bool withChannels = false)
     {
-        var counter = 0;
-        while (counter < retryCount)
+        _manualReset.Wait();
+        var guild = await _client?.Rest.GetGuildAsync(id);
+        if (guild is null)
         {
-            _logger.LogInformation($"Attempt number {counter + 1} proxy reservation");
-            var reservedProxy = await _proxyHolderService.ReserveProxyAndReleaseIfNeeded();
-
-            if (reservedProxy is not null)
-                return reservedProxy;
-
-            counter++;
-            await Task.Delay(millisecondsDelay);
+            return null;
         }
 
-        return null;
+        var channels = withChannels switch
+        {
+            true => new List<RestGuildChannel>((await guild.GetChannelsAsync()).ToArray()),
+            _ => new List<RestGuildChannel>(Array.Empty<RestGuildChannel>())
+        };
+
+        return guild.ToDiscordGuild(channels);
     }
 
-    private async Task<T?> RetryOnFailureUseProxyAsync<T>(
-        Func<Task<T>> action,
-        int retryCount = 2,
-        int millisecondDelay = 0)
+    private async Task<T> ExecuteRequest<T>(Func<Task<T>> func)
     {
-        var counter = 0;
-        while (counter < retryCount)
-        {
-            counter++;
-            try
-            {
-                return await ExecuteInClientSemaphoreAsync(async () => await action());
-            }
-            catch (CloudFlareException)
-            {
-                var proxy = await ReserveProxyInLoopAsync(5, 2000);
-                if (proxy is null)
-                    continue;
-
-                await ExecuteInClientSemaphoreAsync(async () =>
-                {
-                    if (_client != null)
-                    {
-                        await _client.LogoutAsync();
-                        await _client.DisposeAsync();
-                    }
-                    _client = await InitClientAsync(proxy.ToWebProxy());
-                    return Task.CompletedTask;
-                });
-            }
-
-            await Task.Delay(millisecondDelay);
-        }
-
-        return default;
-    }
-    
-    private async Task<T?> ExecuteInClientSemaphoreAsync<T>(Func<Task<T>> action)
-    {
-        Exception? exception;
-        await _clientSemaphore.WaitAsync();
-        try
-        {
-            return await action();
-        }
-        catch (Exception e)
-        {
-            exception = e;
-        }
-        finally
-        {
-            _clientSemaphore.Release();
-        }
-
-        if (exception is not null)
-            throw exception;
-
-        return default;
+        _manualReset.Wait();
+        var requestTask = func();
+        _requestsTasks.Add(requestTask);
+        return await requestTask;
     }
 }

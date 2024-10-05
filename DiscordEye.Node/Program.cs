@@ -1,5 +1,4 @@
 using DiscordEye.Infrastructure.Extensions;
-using DiscordEye.Node.BackgroundServices;
 using DiscordEye.Node.DiscordClientWrappers.EventClient;
 using DiscordEye.Node.DiscordClientWrappers.RequestClient;
 using DiscordEye.Node.Options;
@@ -48,7 +47,6 @@ builder.Services.AddMassTransit(x =>
 });
 builder.Services.AddGrpc();
 builder.Services.AddSingleton<IProxyHolderService, ProxyHolderService>();
-builder.Services.AddHostedService<DiscordFacadeBackgroundService>();
 builder.Services.AddSingleton<IDiscordEventClient, DiscordEventClient>();
 builder.Services.AddSingleton<IDiscordRequestClient, DiscordRequestClient>();
 var app = builder.Build();

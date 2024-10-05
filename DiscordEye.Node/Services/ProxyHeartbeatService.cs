@@ -14,7 +14,7 @@ public class ProxyHeartbeatService : ProxyHeartbeatGrpcService.ProxyHeartbeatGrp
 
     public override async Task<ProxyHeartbeatResponse> Heartbeat(ProxyHeartbeatRequest request, ServerCallContext context)
     {
-        var holdProxy = _proxyHolderService.GetCurrentHoldProxy();
+        var holdProxy = await _proxyHolderService.GetCurrentHoldProxy();
         return new ProxyHeartbeatResponse
         {
             ReleaseKey = holdProxy is null ? string.Empty : holdProxy.ReleaseKey.ToString()

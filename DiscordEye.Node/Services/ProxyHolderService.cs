@@ -1,3 +1,4 @@
+using DiscordEye.Infrastructure.Services.Lock;
 using DiscordEye.Node.Data;
 using DiscordEye.Node.Mappers;
 using DiscordEye.ProxyDistributor;
@@ -11,72 +12,93 @@ public class ProxyHolderService : IProxyHolderService
     private Proxy? _holdProxy;
     private readonly string _address = $"localhost:{StartupExtensions.GetPort()}";
     private readonly ILogger<ProxyHolderService> _logger;
+    private readonly KeyedLockService _keyedLockService;
 
     public ProxyHolderService(
         ProxyDistributorGrpcService.ProxyDistributorGrpcServiceClient distributorGrpcServiceClient,
-        ILogger<ProxyHolderService> logger)
+        ILogger<ProxyHolderService> logger,
+        KeyedLockService keyedLockService)
     {
         _distributorGrpcServiceClient = distributorGrpcServiceClient;
         _logger = logger;
+        _keyedLockService = keyedLockService;
     }
 
-    public Proxy? GetCurrentHoldProxy()
+    public async Task<Proxy?> GetCurrentHoldProxy()
     {
-        return _holdProxy;
+        using (await _keyedLockService.LockAsync("proxy"))
+        {
+            return _holdProxy;
+        }
+    }
+
+    public async Task<Proxy?> ReserveProxyWithRetries(
+        int retryCount = 1,
+        int millisecondsDelay = 0,
+        CancellationToken cancellationToken = default)
+    {
+        var retries = 0;
+        while (retries <= retryCount && !cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogInformation($"{retries + 1} retry to reserve proxy");
+            var reservedProxy = await ReserveProxy();
+            if (reservedProxy is null)
+            {
+                return reservedProxy;
+            }
+            
+            retries++;
+            await Task.Delay(millisecondsDelay, cancellationToken);
+        }
+
+        return null;
     }
     
-    public async Task<Proxy?> ReserveProxyAndReleaseIfNeeded()
+    public async Task<Proxy?> ReserveProxy()
     {
-        if (_holdProxy is null) return await ReserveProxy();
-
-        var releaseResult = await ReleaseProxy();
-        if (releaseResult == false)
+        using (await _keyedLockService.LockAsync("proxy"))
         {
-            return null;
+            var reservedProxyResponse = await _distributorGrpcServiceClient.ReserveProxyAsync(new ReserveProxyRequest
+            {
+                NodeAddress = _address
+            });
+            if (reservedProxyResponse.ReservedProxy is null)
+            {
+                _logger.LogWarning("Failed to reserve proxy");
+                return null;
+            }
+            var proxy = reservedProxyResponse.ReservedProxy.ToProxy();
+            _holdProxy = proxy;
+            _logger.LogInformation($"Proxy {_holdProxy.Id} successfully reserved");
+
+            return proxy;    
         }
-
-        return await ReserveProxy();
-    }
-    
-    private async Task<Proxy?> ReserveProxy()
-    {
-        var reservedProxyResponse = await _distributorGrpcServiceClient.ReserveProxyAsync(new ReserveProxyRequest
-        {
-            NodeAddress = _address
-        });
-        if (reservedProxyResponse.ReservedProxy is null)
-        {
-            _logger.LogWarning("Failed to reserve proxy");
-            return null;
-        }
-        var proxy = reservedProxyResponse.ReservedProxy.ToProxy();
-        _holdProxy = proxy;
-        _logger.LogInformation($"Proxy {_holdProxy.Id} successfully reserved");
-
-        return proxy;
     }
 
-    private async Task<bool> ReleaseProxy()
+    public async Task<bool> ReleaseProxy()
     {
-        if (_holdProxy is null)
+        using (await _keyedLockService.LockAsync("proxy"))
         {
-            _logger.LogWarning($"Failed to release proxy");
-            throw new ArgumentNullException($"You didn't reserved a proxy to release it");
-        }
+            if (_holdProxy is null)
+            {
+                _logger.LogWarning($"Failed to release proxy");
+                throw new ArgumentNullException($"You didn't reserved a proxy to release it");
+            }
     
-        var releaseProxyResponse = await _distributorGrpcServiceClient.ReleaseProxyAsync(new ReleaseProxyRequest
-        {
-            Id = _holdProxy.Id.ToString(),
-            ReleaseKey = _holdProxy.ReleaseKey.ToString()
-        });
-        if (releaseProxyResponse.OperationResult == false)
-        {
-            _logger.LogWarning($"Failed to release proxy, distributor service return false operation result");
-            return false;
-        }
-        _logger.LogInformation($"Successfully release proxy {_holdProxy.Id}");
-        _holdProxy = null;
+            var releaseProxyResponse = await _distributorGrpcServiceClient.ReleaseProxyAsync(new ReleaseProxyRequest
+            {
+                Id = _holdProxy.Id.ToString(),
+                ReleaseKey = _holdProxy.ReleaseKey.ToString()
+            });
+            if (releaseProxyResponse.OperationResult == false)
+            {
+                _logger.LogWarning($"Failed to release proxy, distributor service return false operation result");
+                return false;
+            }
+            _logger.LogInformation($"Successfully release proxy {_holdProxy.Id}");
+            _holdProxy = null;
 
-        return true;
+            return true;
+        }
     }
 }
