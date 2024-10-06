@@ -53,6 +53,20 @@ builder.Services.AddSingleton<IProxyHolderService, ProxyHolderService>();
 builder.Services.AddSingleton<IDiscordEventClient, DiscordEventClient>();
 builder.Services.AddSingleton<IDiscordRequestClient, DiscordRequestClient>();
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var proxyHolderService = scope.ServiceProvider.GetRequiredService<IProxyHolderService>();
+    var proxy = await proxyHolderService.ReserveProxyWithRetries(10);
+    
+    if (proxy is null)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError("Failed to reserve a proxy. The application will not start.");
+        throw new NullReferenceException("Node can't work without a proxy");
+    }
+}
+
 app.MapGrpcService<NodeService>();
 app.MapGrpcService<ProxyHeartbeatService>();
 app.Run();

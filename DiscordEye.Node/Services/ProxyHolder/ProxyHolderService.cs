@@ -42,7 +42,7 @@ public class ProxyHolderService : IProxyHolderService
         {
             _logger.LogInformation($"{retries + 1} retry to reserve proxy");
             var reservedProxy = await ReserveProxy();
-            if (reservedProxy is null)
+            if (reservedProxy is not null)
             {
                 return reservedProxy;
             }

@@ -19,12 +19,22 @@ public class DiscordRequestClient : IDiscordRequestClient
     private readonly ManualResetEventSlim _manualReset = new(true);
     private readonly ConcurrentBag<Task> _requestsTasks = new();
     private readonly IProxyHolderService _proxyHolderService;
+    private readonly ILogger<DiscordRequestClient> _logger;
 
-    public DiscordRequestClient(IProxyHolderService proxyHolderService)
+    public DiscordRequestClient(
+        IProxyHolderService proxyHolderService,
+        ILogger<DiscordRequestClient> logger)
     {
         _proxyHolderService = proxyHolderService;
+        _logger = logger;
         _token = StartupExtensions.GetDiscordTokenFromEnvironment();
-        _client = InitClientAsync().GetAwaiter().GetResult();
+        var proxy = _proxyHolderService.GetCurrentHoldProxy().GetAwaiter().GetResult();
+        if (proxy is null)
+        {
+            throw new NullReferenceException("Node can't work without a proxy");
+        }
+        
+        _client = InitClientAsync(proxy.ToWebProxy()).GetAwaiter().GetResult();
     }
 
     private async Task<DiscordSocketClient> InitClientAsync(WebProxy? webProxy = null)
@@ -35,13 +45,18 @@ public class DiscordRequestClient : IDiscordRequestClient
         };
 
         if (webProxy is not null)
+        {
             discordSocketConfig.RestClientProvider = DefaultRestClientProvider.Create(
                 webProxy: webProxy,
                 useProxy: true);
+            _logger.LogInformation($"Client will be launched using a proxy {webProxy.Address}");
+            Environment.Exit(1);
+        }
 
         var client = new DiscordSocketClient(discordSocketConfig);
         await client.LoginAsync(TokenType.User, _token);
         await client.StartAsync();
+        _logger.LogInformation("Client has been fully launched");
         return client;
     }
     
@@ -88,7 +103,7 @@ public class DiscordRequestClient : IDiscordRequestClient
         }
         catch (CloudFlareException e)
         {
-            Console.WriteLine(e);
+            _logger.LogWarning("CloudFlare has limited requests for this IP address");
             _manualReset.Reset();
             await Task.WhenAll(_requestsTasks);
             var proxy = await _proxyHolderService.ReserveProxyWithRetries();
