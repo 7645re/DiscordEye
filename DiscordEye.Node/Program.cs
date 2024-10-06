@@ -1,6 +1,7 @@
 using DiscordEye.Node.BackgroundServices;
 using DiscordEye.Node.DiscordClientWrappers.EventClient;
 using DiscordEye.Node.DiscordClientWrappers.RequestClient;
+using DiscordEye.Node.Extensions;
 using DiscordEye.Node.Options;
 using DiscordEye.Node.Services;
 using DiscordEye.ProxyDistributor;
@@ -18,6 +19,7 @@ var kafkaOptions = builder
 var proxyDistributorUrl = builder.Configuration.GetValue<string>("ProxyDistributorUrl");
 if (proxyDistributorUrl is null)
     throw new ArgumentException($"ProxyDistributorUrl is null, check appsettings.json file");
+builder.AddLogger();
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.Configure<DiscordOptions>(builder.Configuration.GetRequiredSection("Discord"));
 builder.Services.AddGrpcClient<ProxyDistributorGrpcService.ProxyDistributorGrpcServiceClient>(opt =>
