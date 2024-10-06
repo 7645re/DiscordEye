@@ -3,10 +3,7 @@ using Grpc.Core;
 
 namespace DiscordEye.ProxyDistributor.Services.ProxyDistributor;
 
-public class ProxyDistributorGrpcService : DiscordEye
-    .ProxyDistributor
-    .ProxyDistributorGrpcService
-    .ProxyDistributorGrpcServiceBase
+public class ProxyDistributorGrpcService : ProxyDistributorGrpc.ProxyDistributorGrpcBase
 {
     private readonly IProxyDistributorService _proxyDistributorService;
 

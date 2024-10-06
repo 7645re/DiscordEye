@@ -19,7 +19,7 @@ public static class ChannelMapper
     {
         return new DiscordChannelGrpc
         {
-            Id = channel.Id.ToString(),
+            Id = channel.Id,
             Name = channel.Name,
             Type = channel.RecognizeChannelType()
         };

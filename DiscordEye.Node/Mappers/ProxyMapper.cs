@@ -1,6 +1,5 @@
 using System.Net;
 using DiscordEye.Node.Data;
-using DiscordEye.ProxyDistributor;
 
 namespace DiscordEye.Node.Mappers;
 

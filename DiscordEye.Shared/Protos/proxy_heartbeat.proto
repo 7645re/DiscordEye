@@ -1,8 +1,6 @@
 syntax = "proto3";
 
-option csharp_namespace = "DiscordEye.ProxyDistributor";
-
-package proxyDistributor;
+option csharp_namespace = "DiscordEye";
 
 message ProxyHeartbeatRequest {
 }

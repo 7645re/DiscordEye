@@ -4,7 +4,7 @@ using Grpc.Core;
 
 namespace DiscordEye.Node.Services.Node;
 
-public class NodeService : DiscordEye.Node.Node.NodeBase
+public class NodeService : NodeGrpc.NodeGrpcBase
 {
     private readonly IDiscordRequestClient _discordRequestClient;
 

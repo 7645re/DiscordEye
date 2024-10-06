@@ -9,7 +9,7 @@ using Grpc.Net.Client;
 
 namespace DiscordEye.ProxyDistributor.Services.Heartbeat;
 
-public class ProxyHeartbeatService : IProxyHeartbeatService
+public class ProxyHeartbeatService : IProxyHeartbeatService, IDisposable
 {
     private readonly ConcurrentDictionary<Guid, ProxyHeartbeat> _proxiesHeartbeatsDict;
     private readonly TimeSpan _healthPulsePeriod = TimeSpan.FromSeconds(5);
@@ -225,6 +225,16 @@ public class ProxyHeartbeatService : IProxyHeartbeatService
          {
              _logger.LogWarning("An error occurred while creating an grpc channel for address {uri}", e);
              return null;
+         }
+     }
+
+     public void Dispose()
+     {
+         _lockService.Dispose();
+         foreach (var keyValuePair in _cachedGrpcChannel)
+         {
+             keyValuePair.Value.Dispose();
+             _logger.LogInformation($"Grpc channel for {keyValuePair.Key} disposed");
          }
      }
 }

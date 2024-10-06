@@ -23,10 +23,10 @@ public static class GuildMapper
     {
         return new DiscordGuildGrpc
         {
-            Id = discordGuild.Id.ToString(),
+            Id = discordGuild.Id,
             IconUrl = discordGuild.IconUrl,
             Name = discordGuild.Name,
-            OwnerId = discordGuild.OwnerId.ToString(),
+            OwnerId = discordGuild.OwnerId,
             Channels = { discordGuild
                 .Channels
                 .Select(x => x.ToDiscordChannelGrpc())

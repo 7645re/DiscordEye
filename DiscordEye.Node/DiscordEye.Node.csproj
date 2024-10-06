@@ -50,6 +50,17 @@
             <Generator>MSBuild:Compile</Generator>
         </Protobuf>
     </ItemGroup>
+
+    <ItemGroup>
+        <Protobuf Include="../DiscordEye.Shared/Protos/events_aggregator.proto">
+            <GrpcServices>Client</GrpcServices>
+            <Access>Public</Access>
+            <ProtoCompile>True</ProtoCompile>
+            <CompileOutputs>True</CompileOutputs>
+            <OutputDir>obj\Debug/net8.0/</OutputDir>
+            <Generator>MSBuild:Compile</Generator>
+        </Protobuf>
+    </ItemGroup>
     
     <ItemGroup>
       <ProjectReference Include="..\DiscordEye.Infrastructure\DiscordEye.Infrastructure.csproj" />
@@ -59,9 +70,6 @@
     <ItemGroup>
       <Content Include="..\.dockerignore">
         <Link>.dockerignore</Link>
-      </Content>
-      <Content Update="appsettings.Development.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </Content>
     </ItemGroup>
     
