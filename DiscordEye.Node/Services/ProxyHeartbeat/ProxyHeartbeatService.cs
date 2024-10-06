@@ -1,7 +1,8 @@
+using DiscordEye.Node.Services.ProxyHolder;
 using DiscordEye.ProxyDistributor;
 using Grpc.Core;
 
-namespace DiscordEye.Node.Services;
+namespace DiscordEye.Node.Services.ProxyHeartbeat;
 
 public class ProxyHeartbeatService : ProxyHeartbeatGrpcService.ProxyHeartbeatGrpcServiceBase
 {

@@ -1,24 +1,28 @@
 using System.Collections.Concurrent;
 using System.Net;
 using Discord;
+using Discord.Net;
 using Discord.Net.Rest;
 using Discord.Rest;
 using Discord.WebSocket;
 using DiscordEye.Node.Data;
 using DiscordEye.Node.Mappers;
+using DiscordEye.Node.Services.ProxyHolder;
 using DiscordEye.Shared.Extensions;
 
 namespace DiscordEye.Node.DiscordClientWrappers.RequestClient;
 
 public class DiscordRequestClient : IDiscordRequestClient
 {
-    private readonly DiscordSocketClient? _client;
+    private DiscordSocketClient? _client;
     private readonly string _token;
     private readonly ManualResetEventSlim _manualReset = new(true);
     private readonly ConcurrentBag<Task> _requestsTasks = new();
+    private readonly IProxyHolderService _proxyHolderService;
 
-    public DiscordRequestClient()
+    public DiscordRequestClient(IProxyHolderService proxyHolderService)
     {
+        _proxyHolderService = proxyHolderService;
         _token = StartupExtensions.GetDiscordTokenFromEnvironment();
         _client = InitClientAsync().GetAwaiter().GetResult();
     }
@@ -54,27 +58,47 @@ public class DiscordRequestClient : IDiscordRequestClient
         ulong id,
         bool withChannels = false)
     {
-        _manualReset.Wait();
-        var guild = await _client?.Rest.GetGuildAsync(id);
-        if (guild is null)
+        return await ExecuteRequest(async () =>
         {
-            return null;
-        }
+            var guild = await _client?.Rest.GetGuildAsync(id);
+            if (guild is null)
+            {
+                return null;
+            }
 
-        var channels = withChannels switch
-        {
-            true => new List<RestGuildChannel>((await guild.GetChannelsAsync()).ToArray()),
-            _ => new List<RestGuildChannel>(Array.Empty<RestGuildChannel>())
-        };
+            var channels = withChannels switch
+            {
+                true => new List<RestGuildChannel>((await guild.GetChannelsAsync()).ToArray()),
+                _ => new List<RestGuildChannel>(Array.Empty<RestGuildChannel>())
+            };
 
-        return guild.ToDiscordGuild(channels);
+            return guild.ToDiscordGuild(channels);
+        });
     }
 
-    private async Task<T> ExecuteRequest<T>(Func<Task<T>> func)
+    private async Task<T?> ExecuteRequest<T>(Func<Task<T>> func)
     {
         _manualReset.Wait();
         var requestTask = func();
         _requestsTasks.Add(requestTask);
-        return await requestTask;
+        try
+        {
+            var result = await requestTask;
+            return result;
+        }
+        catch (CloudFlareException e)
+        {
+            Console.WriteLine(e);
+            _manualReset.Reset();
+            await Task.WhenAll(_requestsTasks);
+            var proxy = await _proxyHolderService.ReserveProxyWithRetries();
+            if (proxy is null)
+            {
+                return default;
+            }
+            _client = await InitClientAsync(proxy.ToWebProxy());
+            _manualReset.Set();
+            return default;
+        }
     }
 }

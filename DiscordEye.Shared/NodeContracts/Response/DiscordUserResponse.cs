@@ -1,4 +1,4 @@
-namespace DiscordEye.Shared.DiscordListenerApi.Response;
+namespace DiscordEye.Shared.NodeContracts.Response;
 
 public class DiscordUserResponse
 {

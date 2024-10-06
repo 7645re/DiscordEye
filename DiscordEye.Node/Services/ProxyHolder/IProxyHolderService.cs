@@ -1,6 +1,6 @@
 using DiscordEye.Node.Data;
 
-namespace DiscordEye.Node.Services;
+namespace DiscordEye.Node.Services.ProxyHolder;
 
 public interface IProxyHolderService
 {
@@ -9,6 +9,6 @@ public interface IProxyHolderService
     Task<bool> ReleaseProxy();
     Task<Proxy?> ReserveProxyWithRetries(
         int retryCount = 1,
-        int millisecondsDelay = 0,
+        int millisecondsDelay = 100,
         CancellationToken cancellationToken = default);
 }

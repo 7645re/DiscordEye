@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option csharp_namespace = "DiscordEye.DiscordListener";
+option csharp_namespace = "DiscordEye.Node";
 
 package discordListener;
 
@@ -61,7 +61,7 @@ message DiscordGuildGrpcRequest {
   bool with_channels = 2;
 }
 
-service DiscordListener {
+service Node {
   rpc GetUser (DiscordUserGrpcRequest) returns (DiscordUserGrpcResponse);
   rpc GetGuild (DiscordGuildGrpcRequest) returns (DiscordGuildGrpcResponse);
 }

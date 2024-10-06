@@ -1,4 +1,4 @@
-using DiscordEye.Shared.DiscordListenerApi.Response;
+using DiscordEye.Shared.NodeContracts.Response;
 
 namespace DiscordEye.EventsAggregator;
 

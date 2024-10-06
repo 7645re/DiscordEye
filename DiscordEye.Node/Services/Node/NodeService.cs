@@ -1,15 +1,14 @@
-using DiscordEye.DiscordListener;
 using DiscordEye.Node.DiscordClientWrappers.RequestClient;
 using DiscordEye.Node.Mappers;
 using Grpc.Core;
 
-namespace DiscordEye.Node.Services;
+namespace DiscordEye.Node.Services.Node;
 
-public class DiscordListenerService : DiscordListener.DiscordListener.DiscordListenerBase
+public class NodeService : DiscordEye.Node.Node.NodeBase
 {
     private readonly IDiscordRequestClient _discordRequestClient;
 
-    public DiscordListenerService(IDiscordRequestClient discordRequestClient)
+    public NodeService(IDiscordRequestClient discordRequestClient)
     {
         _discordRequestClient = discordRequestClient;
     }

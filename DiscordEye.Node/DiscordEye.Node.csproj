@@ -26,7 +26,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Protobuf Include="../DiscordEye.Shared/Protos/discord_listener.proto">
+        <Protobuf Include="..\DiscordEye.Shared\Protos\node.proto">
             <GrpcServices>Server</GrpcServices>
             <Access>Public</Access>
             <ProtoCompile>True</ProtoCompile>

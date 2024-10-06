@@ -4,7 +4,7 @@ using DiscordEye.Node.Mappers;
 using DiscordEye.ProxyDistributor;
 using DiscordEye.Shared.Extensions;
 
-namespace DiscordEye.Node.Services;
+namespace DiscordEye.Node.Services.ProxyHolder;
 
 public class ProxyHolderService : IProxyHolderService
 {
@@ -34,7 +34,7 @@ public class ProxyHolderService : IProxyHolderService
 
     public async Task<Proxy?> ReserveProxyWithRetries(
         int retryCount = 1,
-        int millisecondsDelay = 0,
+        int millisecondsDelay = 100,
         CancellationToken cancellationToken = default)
     {
         var retries = 0;

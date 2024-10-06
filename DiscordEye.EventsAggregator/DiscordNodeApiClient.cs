@@ -1,5 +1,5 @@
 using System.Net;
-using DiscordEye.Shared.DiscordListenerApi.Response;
+using DiscordEye.Shared.NodeContracts.Response;
 using Microsoft.Extensions.Options;
 
 namespace DiscordEye.EventsAggregator;

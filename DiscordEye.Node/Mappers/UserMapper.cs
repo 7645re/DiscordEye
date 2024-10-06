@@ -1,5 +1,4 @@
 using Discord.API;
-using DiscordEye.DiscordListener;
 using DiscordEye.Node.Data;
 
 namespace DiscordEye.Node.Mappers;
