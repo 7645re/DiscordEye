@@ -1,10 +1,10 @@
-using System.Collections.Concurrent;
 using System.Net;
 using Discord;
 using Discord.Net;
 using Discord.Net.Rest;
 using Discord.Rest;
 using Discord.WebSocket;
+using DiscordEye.Infrastructure.Services.Lock;
 using DiscordEye.Node.Data;
 using DiscordEye.Node.Mappers;
 using DiscordEye.Node.Services.ProxyHolder;
@@ -18,16 +18,18 @@ public class DiscordRequestClient : IDiscordRequestClient
     private readonly string _token;
     private readonly ManualResetEventSlim _manualReset = new(true);
     private readonly List<Task> _requestsTasks = new();
-    private readonly SemaphoreSlim _requestTasksSemaphoreSlim = new(1,1);
+    private readonly KeyedLockService _keyedLockService;
     private readonly IProxyHolderService _proxyHolderService;
     private readonly ILogger<DiscordRequestClient> _logger;
 
     public DiscordRequestClient(
         IProxyHolderService proxyHolderService,
-        ILogger<DiscordRequestClient> logger)
+        ILogger<DiscordRequestClient> logger,
+        KeyedLockService keyedLockService)
     {
         _proxyHolderService = proxyHolderService;
         _logger = logger;
+        _keyedLockService = keyedLockService;
         _token = StartupExtensions.GetDiscordTokenFromEnvironment();
         var proxy = _proxyHolderService.GetCurrentHoldProxy().GetAwaiter().GetResult();
         if (proxy is null)
@@ -65,7 +67,7 @@ public class DiscordRequestClient : IDiscordRequestClient
     {
         return await await ExecuteRequest(async () =>
         {
-            await Task.Delay(10000);
+            throw new CloudFlareException();
             var userProfile = await _client.Rest.GetUserProfileAsync(id);
             return userProfile?.ToDiscordUser();
         });
@@ -95,46 +97,54 @@ public class DiscordRequestClient : IDiscordRequestClient
 
     private async Task<Task<T>?> ExecuteRequest<T>(Func<Task<T>> func)
     {
-        try
+        _manualReset.Wait();
+        var requestTask = func();
+
+        using (await _keyedLockService.LockAsync("requestTasks"))
         {
-            _manualReset.Wait();
-            var requestTask = func();
-            await _requestTasksSemaphoreSlim.WaitAsync();
             _requestsTasks.Add(requestTask);
-            _logger.LogInformation($"{DateTime.Now} Таска {requestTask.Id} добавлена в список тасок ");
-            _requestTasksSemaphoreSlim.Release();
-
-            Task.Run(() =>
-            {
-                requestTask.ContinueWith(_ =>
-                {
-                    _requestTasksSemaphoreSlim.WaitAsync();
-                    _requestsTasks.Remove(requestTask);
-                    _logger.LogInformation($"{DateTime.Now} Таска {requestTask.Id} удалена из списка тасок ");
-                    _requestTasksSemaphoreSlim.Release();
-                });
-                return Task.CompletedTask;
-            });
-            
-            return requestTask;
+            _logger.LogInformation($"Task with ID {requestTask.Id} has been added to the list of tasks");    
         }
-        catch (CloudFlareException e)
+        
+        Task.Run(async () =>
         {
-            _logger.LogWarning("CloudFlare has limited requests for this IP address");
-            _manualReset.Reset();
-
-            await _requestTasksSemaphoreSlim.WaitAsync();
-            await Task.WhenAll(_requestsTasks);
-            _requestTasksSemaphoreSlim.Release();
-
-            var proxy = await _proxyHolderService.ReserveProxyWithRetries();
-            if (proxy is null)
+            try
             {
+                await requestTask;
+                using (await _keyedLockService.LockAsync("requestTasks"))
+                {
+                    if (_requestsTasks.Remove(requestTask))
+                    {
+                        _logger.LogInformation($"Task with ID {requestTask.Id} was successfully removed from the task list");
+                    }
+                    else
+                    {
+                        _logger.LogCritical($"The task with ID {requestTask.Id} was not removed from the task list");
+                    }
+                }
+                return Task.CompletedTask;
+            }
+            catch (CloudFlareException e)
+            {
+                _logger.LogWarning("CloudFlare has limited requests for this IP address");
+                _manualReset.Reset();
+
+                using (await _keyedLockService.LockAsync("requestTasks"))
+                {
+                    await Task.WhenAll(_requestsTasks);
+                }
+
+                var proxy = await _proxyHolderService.ReserveProxyWithRetries();
+                if (proxy is null)
+                {
+                    return default;
+                }
+                _client = await InitClientAsync(proxy.ToWebProxy());
+                _manualReset.Set();
                 return default;
             }
-            _client = await InitClientAsync(proxy.ToWebProxy());
-            _manualReset.Set();
-            return default;
-        }
+        });
+        
+        return requestTask;
     }
 }
