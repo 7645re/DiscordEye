@@ -56,7 +56,7 @@ public static class ServiceCollectionExtensions
                 .ForJob(jobKey)
                 .WithIdentity("ProxiesHeartbeatsJob-trigger")
                 .WithSimpleSchedule(x => x
-                    .WithIntervalInSeconds(40)
+                    .WithIntervalInSeconds(10)
                     .RepeatForever()));
         });
         serviceCollection.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);

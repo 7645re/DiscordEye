@@ -36,6 +36,11 @@ public class ProxyHolderService : IProxyHolderService
         int millisecondsDelay = 100,
         CancellationToken cancellationToken = default)
     {
+        if (await GetCurrentHoldProxy() is not null)
+        {
+            await ReleaseProxy();
+        }
+        
         var retries = 0;
         while (retries <= retryCount && !cancellationToken.IsCancellationRequested)
         {

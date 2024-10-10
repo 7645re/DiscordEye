@@ -56,6 +56,11 @@ public class DiscordRequestClient : IDiscordRequestClient
             _logger.LogInformation($"Client will be launched using a proxy {webProxy.Address}");
         }
 
+        if (_client is not null)
+        {
+            await _client.DisposeAsync();
+        }
+
         var client = new DiscordSocketClient(discordSocketConfig);
         await client.LoginAsync(TokenType.User, _token);
         await client.StartAsync();
@@ -67,7 +72,6 @@ public class DiscordRequestClient : IDiscordRequestClient
     {
         return await await ExecuteRequest(async () =>
         {
-            throw new CloudFlareException();
             var userProfile = await _client.Rest.GetUserProfileAsync(id);
             return userProfile?.ToDiscordUser();
         });
@@ -95,56 +99,133 @@ public class DiscordRequestClient : IDiscordRequestClient
         });
     }
 
-    private async Task<Task<T>?> ExecuteRequest<T>(Func<Task<T>> func)
+    private async Task<Task<T?>> ExecuteRequest<T>(Func<Task<T>> func)
     {
         _manualReset.Wait();
         var requestTask = func();
+        var proxyUsedWhenStartRequest = await _proxyHolderService.GetCurrentHoldProxy();
+        ThrowIfProxyIsNull(proxyUsedWhenStartRequest);
 
-        using (await _keyedLockService.LockAsync("requestTasks"))
+        await ModifyRequestsTasksInLock(requestsTask =>
         {
-            _requestsTasks.Add(requestTask);
-            _logger.LogInformation($"Task with ID {requestTask.Id} has been added to the list of tasks");    
-        }
+            requestsTask.Add(requestTask);
+            _logger.LogInformation($"Task with ID {requestTask.Id} has been added to the list of tasks");
+        });
         
         Task.Run(async () =>
         {
             try
             {
+                _logger.LogInformation($"The task with ID {requestTask.Id} has started waiting for completion");
                 await requestTask;
-                using (await _keyedLockService.LockAsync("requestTasks"))
+                await ModifyRequestsTasksInLock(requestsTask =>
                 {
-                    if (_requestsTasks.Remove(requestTask))
+                    if (requestsTask.Remove(requestTask))
                     {
-                        _logger.LogInformation($"Task with ID {requestTask.Id} was successfully removed from the task list");
+                        _logger.LogInformation(
+                            $"Task with ID {requestTask.Id} was successfully removed from the task list");
                     }
                     else
                     {
                         _logger.LogCritical($"The task with ID {requestTask.Id} was not removed from the task list");
                     }
-                }
-                return Task.CompletedTask;
+                });
             }
             catch (CloudFlareException e)
             {
-                _logger.LogWarning("CloudFlare has limited requests for this IP address");
-                _manualReset.Reset();
-
-                using (await _keyedLockService.LockAsync("requestTasks"))
+                using (await _keyedLockService.LockAsync("ProcessingCloudFlareException"))
                 {
-                    await Task.WhenAll(_requestsTasks);
-                }
+                    var currentProxy = await _proxyHolderService.GetCurrentHoldProxy();
+                    ThrowIfProxyIsNull(currentProxy);
 
-                var proxy = await _proxyHolderService.ReserveProxyWithRetries();
-                if (proxy is null)
-                {
-                    return default;
+                    if (proxyUsedWhenStartRequest.ReleaseKey != currentProxy.ReleaseKey)
+                    {
+                        _logger.LogInformation($"CloudFlare error occurred in a task that was running with" +
+                                               $" the release key {proxyUsedWhenStartRequest.ReleaseKey}, a new proxy" +
+                                               $" with the key {currentProxy.ReleaseKey} had already been requested");
+                        await ModifyRequestsTasksInLock(requestsTasks =>
+                        {
+                            requestsTasks.Remove(requestTask);
+                            _logger.LogInformation($"The task with ID {requestTask.Id} has been removed" +
+                                                   $" from the request task list");
+                        });
+                        return;
+                    }
+
+                    _logger.LogWarning($"CloudFlare has limited requests in task with ID {requestTask.Id}" +
+                                       $" for proxy with release key {proxyUsedWhenStartRequest.ReleaseKey}");
+                    _manualReset.Reset();
+                    _logger.LogWarning("The ability to add new tasks to requests has been suspended");
+
+                    _logger.LogInformation($"Started waiting for tasks to complete with IDs: " +
+                                           $"{string.Join(", ", _requestsTasks.Select(x => x.Id))}");
+
+                    await TaskWhenAllInTryCatch(_requestsTasks.ToArray());
+                    _logger.LogWarning("Waited for all requests task to complete");
+                    
+                    await ModifyRequestsTasksInLock(requestsTask =>
+                    {
+                        requestsTask.Clear();
+                        _logger.LogWarning("Cleared the list of tasks for requests");
+                    });
+
+                    var proxy = await _proxyHolderService.ReserveProxyWithRetries();
+                    if (proxy is null)
+                    {
+                        _logger.LogWarning("There is no way to reinitialize the client " +
+                                           "because the proxy distributor was unable to reserve a proxy");
+                        return;
+                    }
+
+                    _client = await InitClientAsync(proxy.ToWebProxy());
+                    _manualReset.Set();
+                    _logger.LogWarning("The ability to add new tasks to requests has been restored");
                 }
-                _client = await InitClientAsync(proxy.ToWebProxy());
-                _manualReset.Set();
-                return default;
             }
         });
         
-        return requestTask;
+        return Task.Run(async () =>
+        {
+            try
+            {
+                return await requestTask;
+            }
+            catch (CloudFlareException e)
+            {
+            }
+
+            return default;
+        });
+    }
+
+    private void ThrowIfProxyIsNull(Proxy? proxy)
+    {
+        if (proxy is not null) return;
+        _logger.LogCritical("Unexpected application behavior, client should not be used without a proxy");
+        throw new NullReferenceException("Unexpected application behavior, client should" +
+                                         " not be used without a proxy");
+    }
+
+    private async Task<(Task task, Exception? exception)> TaskWhenAllInTryCatch(Task[] tasks)
+    {
+        Task? t = null;
+        try
+        {
+            t = Task.WhenAll(tasks);
+            await t;
+            return (t, null);
+        }
+        catch (Exception ex)
+        {
+            return (t!, ex);
+        }
+    }
+
+    private async Task ModifyRequestsTasksInLock(Action<List<Task>> modifyAction)
+    {
+        using (await _keyedLockService.LockAsync("requestTasks"))
+        {
+            modifyAction(_requestsTasks);
+        }
     }
 }
