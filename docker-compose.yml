@@ -13,7 +13,7 @@ services:
       VAULT_DEV_ROOT_TOKEN_ID: "root-token"
       VAULT_ADDR: "http://0.0.0.0:8200"
     volumes:
-      - ./vault/data:/vault/file
+      - vault_data:/vault/file
     cap_add:
       - IPC_LOCK
     command: server -dev -dev-root-token-id=root-token
@@ -61,41 +61,14 @@ services:
     networks:
       - DiscordEye
   
-  node1:
-    build:
-      context: .
-      dockerfile: DiscordEye.Node/Dockerfile
-    container_name: DiscordEye.Node1
-    environment:
-      - DISCORD_TOKEN=MTA1MTE2NTcwMDUxNDkxODQzMA.GGhNBl.XLrPFxXcABEkLbYKiWzmcV3WTpa545NOz6RLqA
-      - ASPNETCORE_HTTP_PORTS=5001
-      - ASPNETCORE_ENVIRONMENT=Docker
-    networks:
-      - DiscordEye
-    ports:
-      - "5001:5001"
-  
-  node2:
-    build:
-      context: .
-      dockerfile: DiscordEye.Node/Dockerfile
-    container_name: DiscordEye.Node2
-    environment:
-      - DISCORD_TOKEN=MTA1MTE2NTcwMDUxNDkxODQzMA.GGhNBl.XLrPFxXcABEkLbYKiWzmcV3WTpa545NOz6RLqA
-      - ASPNETCORE_HTTP_PORTS=5002
-      - ASPNETCORE_ENVIRONMENT=Docker
-    networks:
-      - DiscordEye
-    ports:
-      - "5002:5002"
-  
-  proxyDistributor:
+  proxy_distributor:
     build:
       context: .
       dockerfile: DiscordEye.ProxyDistributor/Dockerfile
     container_name: DiscordEye.ProxyDistributor
     environment:
       - ASPNETCORE_HTTP_PORTS=5000
+      - ASPNETCORE_ENVIRONMENT=Docker
     networks:
       - DiscordEye
     ports:
@@ -103,7 +76,7 @@ services:
 
   # ELK Stack
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
+    image: elasticsearch:7.10.1
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -116,20 +89,20 @@ services:
       - DiscordEye
 
   logstash:
-    image: docker.elastic.co/logstash/logstash:7.10.1
+    image: logstash:7.10.1
     container_name: logstash
     ports:
       - "5044:5044"
     volumes:
-      - ./logstash/pipeline:/usr/share/logstash/pipeline
       - logstash_data:/usr/share/logstash/data
+      - /var/logstash/pipeline:/usr/share/logstash/pipeline:rw
     networks:
       - DiscordEye
     depends_on:
       - elasticsearch
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:7.10.1
+    image: kibana:7.10.1
     container_name: kibana
     ports:
       - "5601:5601"

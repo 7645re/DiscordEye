@@ -12,7 +12,7 @@ using DiscordEye.Shared.Extensions;
 
 namespace DiscordEye.Node.DiscordClientWrappers.RequestClient;
 
-public class DiscordRequestClient : IDiscordRequestClient
+public class DiscordRequestClient : IDiscordRequestClient, IDisposable
 {
     private DiscordSocketClient? _client;
     private readonly string _token;
@@ -227,5 +227,10 @@ public class DiscordRequestClient : IDiscordRequestClient
         {
             modifyAction(_requestsTasks);
         }
+    }
+
+    public void Dispose()
+    {
+        _client.Dispose();
     }
 }
