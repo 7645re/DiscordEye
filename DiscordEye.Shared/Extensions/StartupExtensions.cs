@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Configuration;
-
 namespace DiscordEye.Shared.Extensions;
 
 public static class StartupExtensions

@@ -65,14 +65,29 @@ services:
     build:
       context: .
       dockerfile: DiscordEye.Node/Dockerfile
-    container_name: DiscordEye.Node
+    container_name: DiscordEye.Node1
     environment:
-      - DISCORD_TOKEN=token
-      - ASPNETCORE_HTTP_PORTS=7000
+      - DISCORD_TOKEN=MTA1MTE2NTcwMDUxNDkxODQzMA.GGhNBl.XLrPFxXcABEkLbYKiWzmcV3WTpa545NOz6RLqA
+      - ASPNETCORE_HTTP_PORTS=5001
+      - ASPNETCORE_ENVIRONMENT=Docker
     networks:
       - DiscordEye
     ports:
-      - "7000:7000"
+      - "5001:5001"
+  
+  node2:
+    build:
+      context: .
+      dockerfile: DiscordEye.Node/Dockerfile
+    container_name: DiscordEye.Node2
+    environment:
+      - DISCORD_TOKEN=MTA1MTE2NTcwMDUxNDkxODQzMA.GGhNBl.XLrPFxXcABEkLbYKiWzmcV3WTpa545NOz6RLqA
+      - ASPNETCORE_HTTP_PORTS=5002
+      - ASPNETCORE_ENVIRONMENT=Docker
+    networks:
+      - DiscordEye
+    ports:
+      - "5002:5002"
   
   proxyDistributor:
     build:

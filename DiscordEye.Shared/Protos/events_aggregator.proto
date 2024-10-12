@@ -1,0 +1,20 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "DiscordEye";
+
+message RegisterRequest {
+  string nodeAddress = 1;
+}
+
+enum RegisterResult {
+  Fail = 0;
+  Success = 1;
+}
+
+message RegisterResponse {
+  RegisterResult result = 1;
+}
+
+service EventsAggregatorGrpc {
+  rpc RegisterNode(RegisterRequest) returns (RegisterResponse);
+}

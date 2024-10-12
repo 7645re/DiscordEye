@@ -3,19 +3,19 @@ using Grpc.Core;
 
 namespace DiscordEye.ProxyDistributor.Services.ProxyDistributor;
 
-public class ProxyDistributorGrpcService : DiscordEye
-    .ProxyDistributor
-    .ProxyDistributorGrpcService
-    .ProxyDistributorGrpcServiceBase
+public class ProxyDistributorGrpcService : ProxyDistributorGrpc.ProxyDistributorGrpcBase
 {
     private readonly IProxyDistributorService _proxyDistributorService;
 
-    public ProxyDistributorGrpcService(IProxyDistributorService proxyDistributorService)
+    public ProxyDistributorGrpcService(
+        IProxyDistributorService proxyDistributorService)
     {
         _proxyDistributorService = proxyDistributorService;
     }
 
-    public override async Task<ReserveProxyResponse> ReserveProxy(ReserveProxyRequest request, ServerCallContext context)
+    public override async Task<ReserveProxyResponse> ReserveProxy(
+        ReserveProxyRequest request,
+        ServerCallContext context)
     {
         var reservedProxy = await _proxyDistributorService.ReserveProxy(request.NodeAddress);
         return new ReserveProxyResponse

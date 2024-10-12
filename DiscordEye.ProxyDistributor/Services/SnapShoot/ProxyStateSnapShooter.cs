@@ -1,3 +1,4 @@
+using DiscordEye.Infrastructure.Services.SnapShoot;
 using DiscordEye.ProxyDistributor.Data;
 
 namespace DiscordEye.ProxyDistributor.Services.SnapShoot;

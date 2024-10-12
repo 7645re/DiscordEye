@@ -1,20 +1,19 @@
 using System.Net;
-using DiscordEye.Node.Dto;
-using DiscordEye.ProxyDistributor;
+using DiscordEye.Node.Data;
 
 namespace DiscordEye.Node.Mappers;
 
 public static class ProxyMapper
 {
-    public static WebProxy ToWebProxy(this ReservedProxyGrpc reservedProxyGrpc)
+    public static WebProxy ToWebProxy(this Proxy proxy)
     {
         return new WebProxy
         {
-            Address = new Uri($"http://{reservedProxyGrpc.Address}:{reservedProxyGrpc.Port}"),
+            Address = new Uri($"http://{proxy.Address}:{proxy.Port}"),
             Credentials = new NetworkCredential
             {
-                Password = reservedProxyGrpc.Password,
-                UserName = reservedProxyGrpc.Login
+                Password = proxy.Password,
+                UserName = proxy.Login
             }
         };
     }

@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
-using System.Net;
 using DiscordEye.Infrastructure.Services.Lock;
 using DiscordEye.ProxyDistributor.Data;
 using DiscordEye.ProxyDistributor.Services.ProxyReservation;
@@ -10,65 +9,69 @@ using Grpc.Net.Client;
 
 namespace DiscordEye.ProxyDistributor.Services.Heartbeat;
 
-public class ProxyHeartbeatService : IProxyHeartbeatService
+public class ProxyHeartbeatService : IProxyHeartbeatService, IDisposable
 {
-    private readonly ConcurrentQueue<ProxyHeartbeat> _proxiesHeartbeatsQueue;
-    private readonly ConcurrentDictionary<Guid, ProxyHeartbeat> _proxiesHeartbeats;
-    private readonly KeyedLockService _locker;
+    private readonly ConcurrentDictionary<Guid, ProxyHeartbeat> _proxiesHeartbeatsDict;
     private readonly TimeSpan _healthPulsePeriod = TimeSpan.FromSeconds(5);
     private readonly ConcurrentDictionary<string, GrpcChannel> _cachedGrpcChannel;
     private readonly IProxyReservationService _proxyReservationService;
     private readonly ILogger<ProxyHeartbeatService> _logger;
     private readonly IProxyHeartbeatSnapShooter _snapShooter;
-
+    private readonly LinkedList<ProxyHeartbeat> _proxiesHeartbeatsLList;
+    private readonly KeyedLockService _lockService;
+    
     public ProxyHeartbeatService(
-        KeyedLockService locker,
         IProxyReservationService proxyReservationService,
         ILogger<ProxyHeartbeatService> logger,
-        IProxyHeartbeatSnapShooter snapShooter)
+        IProxyHeartbeatSnapShooter snapShooter,
+        KeyedLockService lockService)
     {
-        _locker = locker;
         _proxyReservationService = proxyReservationService;
         _logger = logger;
         _snapShooter = snapShooter;
+        _lockService = lockService;
         var snapShoot = _snapShooter
             .LoadSnapShotAsync()
             .GetAwaiter()
             .GetResult() ?? ImmutableDictionary<Guid, ProxyHeartbeat>.Empty;
-        _proxiesHeartbeatsQueue = new ConcurrentQueue<ProxyHeartbeat>(
-            snapShoot.Select(x => x.Value));
-        _proxiesHeartbeats = new ConcurrentDictionary<Guid, ProxyHeartbeat>(snapShoot);
+        _proxiesHeartbeatsDict = new ConcurrentDictionary<Guid, ProxyHeartbeat>(snapShoot);
+        _proxiesHeartbeatsLList = new LinkedList<ProxyHeartbeat>(snapShoot
+            .Select(x => x.Value));
         _cachedGrpcChannel = new ConcurrentDictionary<string, GrpcChannel>();
-        _logger.LogInformation($"Loaded {_proxiesHeartbeats.Count} proxies heartbeats and " +
-                               $"{_proxiesHeartbeatsQueue.Count} proxies heartbeats in queue");
+        _logger.LogInformation($"Loaded {_proxiesHeartbeatsDict.Count} proxies heartbeats and " +
+                               $"{_proxiesHeartbeatsLList.Count} proxies heartbeats in linked list");
     }
 
     public async Task<bool> RegisterProxyHeartbeat(ProxyHeartbeat proxyHeartbeat)
     {
-        if (_proxiesHeartbeats.TryAdd(proxyHeartbeat.ProxyId, proxyHeartbeat) == false)
+        using (await _lockService.LockAsync($"proxyHeartbeat"))
         {
-            _logger.LogWarning($"Error registering proxy {proxyHeartbeat.ProxyId} " +
-                               $"to heartbeat service {proxyHeartbeat}");
-            return false;
-        }
+            if (_proxiesHeartbeatsDict.TryAdd(proxyHeartbeat.ProxyId, proxyHeartbeat) == false)
+            {
+                _logger.LogWarning($"Error registering proxy {proxyHeartbeat.ProxyId} " +
+                                   $"to heartbeat service {proxyHeartbeat}");
+                return false;
+            }
 
-        _proxiesHeartbeatsQueue.Enqueue(proxyHeartbeat);
-        _logger.LogInformation($"Proxy {proxyHeartbeat.ProxyId} registered to heartbeat service");
-        await _snapShooter.SnapShootAsync(_proxiesHeartbeats);
-        return true;
+            _proxiesHeartbeatsLList.AddLast(proxyHeartbeat);
+            _logger.LogInformation($"Proxy {proxyHeartbeat.ProxyId} registered to heartbeat service");
+            await _snapShooter.SnapShootAsync(_proxiesHeartbeatsDict);
+
+            return true;
+        }
     }
 
     public async Task<bool> UnRegisterProxyHeartbeat(Guid proxyId)
     {
-        if (_proxiesHeartbeats.TryGetValue(proxyId, out var proxyHeartbeat) == false)
+        using (await _lockService.LockAsync($"proxyHeartbeat"))
         {
-            _logger.LogWarning($"Proxy {proxyId} not found in heartbeat service");
-            return false;
-        }
-        
-        using (_locker.Lock(GetProxyHeartBeatLockKey(proxyHeartbeat)))
-        {
-            if (_proxiesHeartbeats.TryRemove(new KeyValuePair<Guid, ProxyHeartbeat>(
+            if (_proxiesHeartbeatsDict.TryGetValue(proxyId, out var proxyHeartbeat) == false)
+            {
+                _logger.LogWarning($"Proxy {proxyId} not found in heartbeat service");
+                return false;
+            }
+    
+            if (_proxiesHeartbeatsDict.TryRemove(new KeyValuePair<Guid, ProxyHeartbeat>(
                     proxyId,
                     proxyHeartbeat)) == false)
             {
@@ -77,9 +80,9 @@ public class ProxyHeartbeatService : IProxyHeartbeatService
                 return false;
             }
 
-            proxyHeartbeat.IsDead = true;
-            _logger.LogInformation($"Proxy {proxyId} marked as dead, unregistered from heartbeat service");
-            await _snapShooter.SnapShootAsync(_proxiesHeartbeats);
+            _proxiesHeartbeatsLList.Remove(proxyHeartbeat);
+            _logger.LogInformation($"Proxy {proxyId} unregistered from heartbeat service");
+            await _snapShooter.SnapShootAsync(_proxiesHeartbeatsDict);
             return true;
         }
     }
@@ -87,53 +90,76 @@ public class ProxyHeartbeatService : IProxyHeartbeatService
     //TODO: mb can parallel grpc calls
     public async Task PulseProxiesHeartbeats()
     {
-        _logger.LogInformation($"Pulsing {_proxiesHeartbeatsQueue.Count} proxies heartbeats");
-        while (_proxiesHeartbeatsQueue.IsEmpty == false)
+        using (await _lockService.LockAsync($"proxyHeartbeat"))
         {
-            if (_proxiesHeartbeatsQueue.TryDequeue(out var proxyHeartbeat) == false)
+            _logger.LogInformation($"Pulsing {_proxiesHeartbeatsLList.Count} proxies heartbeats");
+            if (_proxiesHeartbeatsLList.Count == 0)
             {
-                continue;
+                _logger.LogInformation($"No heartbeats to pulse");
+                return;
             }
 
-            if (proxyHeartbeat.IsDead)
+            var heartbeatsForDelete = new List<ProxyHeartbeat>();
+            var heartbeatsForShift = new List<ProxyHeartbeat>();
+        
+            foreach (var proxyHeartbeat in _proxiesHeartbeatsLList)
             {
-                _logger.LogWarning($"Proxy {proxyHeartbeat.ProxyId} is dead");
-                continue;
-            }
-            
-            if (DateTime.Now - proxyHeartbeat.LastHeartbeatDatetime < _healthPulsePeriod)
-            {
-                _proxiesHeartbeatsQueue.Enqueue(proxyHeartbeat);
-                continue;
+                _logger.LogInformation($"Pulsing proxy {proxyHeartbeat.ProxyId}");
+                if (DateTime.Now - proxyHeartbeat.LastHeartbeatDatetime < _healthPulsePeriod)
+                {
+                    continue;
+                }
+
+                if (await PulseProxyHeartbeat(proxyHeartbeat) == false)
+                {
+                    heartbeatsForDelete.Add(proxyHeartbeat);
+                    await _proxyReservationService.ReleaseProxy(proxyHeartbeat.ProxyId, proxyHeartbeat.ReleaseKey);
+                    continue;
+                }
+
+                var newReservationDateTime = DateTime.Now + _healthPulsePeriod;
+                if (await _proxyReservationService.ProlongProxy(proxyHeartbeat.ProxyId, newReservationDateTime) == false)
+                {
+                    heartbeatsForDelete.Add(proxyHeartbeat);
+                    await _proxyReservationService.ReleaseProxy(proxyHeartbeat.ProxyId, proxyHeartbeat.ReleaseKey);
+                    continue;
+                }
+
+                var newHeartbeat = proxyHeartbeat with { LastHeartbeatDatetime = newReservationDateTime };
+                heartbeatsForDelete.Add(proxyHeartbeat);
+                heartbeatsForShift.Add(newHeartbeat);
+                _logger.LogInformation($"Pulsed proxy {proxyHeartbeat.ProxyId}");
             }
 
-            if (await PulseProxyHeartbeat(proxyHeartbeat) == false)
-            {
-                _proxiesHeartbeats.TryRemove(new KeyValuePair<Guid, ProxyHeartbeat>(
-                    proxyHeartbeat.ProxyId,
-                    proxyHeartbeat));
-                await _proxyReservationService.ReleaseProxy(proxyHeartbeat.ProxyId, proxyHeartbeat.ReleaseKey);
-                await _snapShooter.SnapShootAsync(_proxiesHeartbeats);
-                continue;
-            }
-
-            var newReservationDateTime = DateTime.Now + _healthPulsePeriod;
-            if (await _proxyReservationService.ProlongProxy(proxyHeartbeat.ProxyId, newReservationDateTime) == false)
-            {
-                _proxiesHeartbeats.TryRemove(new KeyValuePair<Guid, ProxyHeartbeat>(
-                    proxyHeartbeat.ProxyId,
-                    proxyHeartbeat));
-                await _proxyReservationService.ReleaseProxy(proxyHeartbeat.ProxyId, proxyHeartbeat.ReleaseKey);
-                await _snapShooter.SnapShootAsync(_proxiesHeartbeats);
-                continue;
-            }
-
-            var newHeartbeat = proxyHeartbeat with { LastHeartbeatDatetime = newReservationDateTime };
-            _proxiesHeartbeatsQueue.Enqueue(newHeartbeat);
-            _logger.LogInformation($"Pulsed proxy {proxyHeartbeat.ProxyId}");
+            DeleteDeadHeartbeats(heartbeatsForDelete);
+            ShiftHeartbeatsToEnd(heartbeatsForShift);
+        
+            await _snapShooter.SnapShootAsync(_proxiesHeartbeatsDict);
         }
     }
 
+    private void DeleteDeadHeartbeats(List<ProxyHeartbeat> heartbeatsForDelete)
+    {
+        foreach (var proxyHeartbeat in heartbeatsForDelete)
+        {
+            _proxiesHeartbeatsDict.TryRemove(new KeyValuePair<Guid, ProxyHeartbeat>(
+                proxyHeartbeat.ProxyId, proxyHeartbeat));
+            _proxiesHeartbeatsLList.Remove(proxyHeartbeat);
+        }
+        _logger.LogInformation($"{heartbeatsForDelete.Count} proxies were deleted");
+    }
+
+    private void ShiftHeartbeatsToEnd(List<ProxyHeartbeat> heartbeatsForShift)
+    {
+        foreach (var proxyHeartbeat in heartbeatsForShift)
+        {
+            _proxiesHeartbeatsLList.Remove(proxyHeartbeat);
+            _proxiesHeartbeatsLList.AddLast(proxyHeartbeat);
+            _proxiesHeartbeatsDict.TryAdd(proxyHeartbeat.ProxyId, proxyHeartbeat);
+        }
+        _logger.LogInformation($"{heartbeatsForShift.Count} proxies were shifted to end");
+    }
+    
     private async Task<bool> PulseProxyHeartbeat(ProxyHeartbeat proxyHeartbeat)
     {
         var grpcChannel = GetOrCreateGrpcChannel(proxyHeartbeat.NodeAddress);
@@ -188,11 +214,6 @@ public class ProxyHeartbeatService : IProxyHeartbeatService
          return newChannel;
      }
      
-     private static string GetProxyHeartBeatLockKey(ProxyHeartbeat proxyHeartbeat)
-     {
-         return "proxyHeartbeat_" + proxyHeartbeat.ProxyId;
-     }
-
      private GrpcChannel? CreateGrpcChannel(string uri)
      {
          try
@@ -204,6 +225,16 @@ public class ProxyHeartbeatService : IProxyHeartbeatService
          {
              _logger.LogWarning("An error occurred while creating an grpc channel for address {uri}", e);
              return null;
+         }
+     }
+
+     public void Dispose()
+     {
+         _lockService.Dispose();
+         foreach (var keyValuePair in _cachedGrpcChannel)
+         {
+             keyValuePair.Value.Dispose();
+             _logger.LogInformation($"Grpc channel for {keyValuePair.Key} disposed");
          }
      }
 }

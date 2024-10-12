@@ -1,31 +1,20 @@
-using DiscordEye.Node.BackgroundServices;
+using DiscordEye.Infrastructure.Extensions;
 using DiscordEye.Node.DiscordClientWrappers.EventClient;
 using DiscordEye.Node.DiscordClientWrappers.RequestClient;
 using DiscordEye.Node.Extensions;
 using DiscordEye.Node.Options;
-using DiscordEye.Node.Services;
-using DiscordEye.ProxyDistributor;
+using DiscordEye.Node.Services.Node;
+using DiscordEye.Node.Services.ProxyHeartbeat;
+using DiscordEye.Node.Services.ProxyHolder;
 using DiscordEye.Shared.Events;
 using DiscordEye.Shared.Options;
 using MassTransit;
 
 var builder = WebApplication.CreateBuilder(args);
-
-var kafkaOptions = builder
-    .Configuration
-    .GetRequiredSection("Kafka")
-    .Get<KafkaOptions>();
-
-var proxyDistributorUrl = builder.Configuration.GetValue<string>("ProxyDistributorUrl");
-if (proxyDistributorUrl is null)
-    throw new ArgumentException($"ProxyDistributorUrl is null, check appsettings.json file");
 builder.AddLogger();
-builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+builder.Services.AddCoreServices();
 builder.Services.Configure<DiscordOptions>(builder.Configuration.GetRequiredSection("Discord"));
-builder.Services.AddGrpcClient<ProxyDistributorGrpcService.ProxyDistributorGrpcServiceClient>(opt =>
-{
-    opt.Address = new Uri(proxyDistributorUrl);
-});
+builder.AddGrpcClients();
 builder.Services.AddMassTransit(x =>
 {
     x.SetKebabCaseEndpointNameFormatter();
@@ -33,6 +22,10 @@ builder.Services.AddMassTransit(x =>
     
     x.AddRider(r =>
     {
+        var kafkaOptions = builder
+            .Configuration
+            .GetRequiredSection("Kafka")
+            .Get<KafkaOptions>();
         r.AddProducer<Guid, MessageDeletedEvent>(kafkaOptions.MessageDeletedTopic);
         r.AddProducer<Guid, MessageReceivedEvent>(kafkaOptions.MessageReceivedTopic);
         r.AddProducer<Guid, MessageUpdatedEvent>(kafkaOptions.MessageUpdatedTopic);
@@ -48,10 +41,12 @@ builder.Services.AddMassTransit(x =>
     });
 });
 builder.Services.AddGrpc();
-builder.Services.AddHostedService<DiscordFacadeBackgroundService>();
+builder.Services.AddSingleton<IProxyHolderService, ProxyHolderService>();
 builder.Services.AddSingleton<IDiscordEventClient, DiscordEventClient>();
 builder.Services.AddSingleton<IDiscordRequestClient, DiscordRequestClient>();
 var app = builder.Build();
-app.MapGrpcService<DiscordListenerService>();
+await app.RegisterNodeToSystem();
+
+app.MapGrpcService<NodeService>();
 app.MapGrpcService<ProxyHeartbeatService>();
 app.Run();

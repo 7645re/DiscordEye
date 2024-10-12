@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Protobuf Include="Protos\discord_listener.proto">
+      <Protobuf Include="Protos\node.proto">
         <GrpcServices>Server</GrpcServices>
         <Access>Public</Access>
         <ProtoCompile>True</ProtoCompile>

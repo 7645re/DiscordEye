@@ -9,7 +9,7 @@ public class MessageHistoryEntity
     [Key]
     public long Id { get; set; }
 
-    public long MessageId { get; set; }
+    public ulong MessageId { get; set; }
     
     [MaxLength(4000)]
     public string Content { get; set; }

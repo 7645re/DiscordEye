@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+option csharp_namespace = "DiscordEye";
+
+enum DiscordChannelTypeGrpc {
+  TEXT_CHANNEL = 0;
+  VOICE_CHANNEL = 1;
+  CATEGORY_CHANNEL = 2;
+  FORUM_CHANNEL = 3;
+}
+
+message DiscordChannelGrpc {
+  uint64 id = 1;
+  string name = 2;
+  DiscordChannelTypeGrpc type = 3;
+} 
+
+message DiscordChannelGrpcResponse {
+  oneof result {
+    DiscordChannelGrpc channel = 1;
+    string error_message = 2;
+  } 
+}
+
+message DiscordGuildGrpc {
+  uint64 id = 1;
+  string icon_url = 2;
+  string name = 3;
+  uint64 owner_id = 4;
+  repeated DiscordChannelGrpc channels = 5;
+}
+
+message DiscordGuildGrpcResponse {
+  oneof result {
+    DiscordGuildGrpc guild = 1;
+    string error_message = 2;
+  }
+}
+
+message DiscordUserGrpc {
+  uint64 id = 1;
+  string username = 2;
+  repeated DiscordGuildGrpc guilds = 3;
+}
+
+message DiscordUserGrpcResponse {
+  oneof result {
+    DiscordUserGrpc user = 1;
+    string error_message = 2;
+  }
+}
+
+message DiscordUserGrpcRequest {
+  uint64 user_id = 1;
+}
+
+message DiscordGuildGrpcRequest {
+  uint64 guild_id = 1;
+  bool with_channels = 2;
+}
+
+service NodeGrpc {
+  rpc GetUser (DiscordUserGrpcRequest) returns (DiscordUserGrpcResponse);
+  rpc GetGuild (DiscordGuildGrpcRequest) returns (DiscordGuildGrpcResponse);
+}
