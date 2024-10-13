@@ -41,7 +41,7 @@ services:
       KAFKA_LOG_RETENTION_MS: 7000
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://192.168.0.41:9092,PLAINTEXT_INTERNAL://192.168.0.41:29092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
@@ -60,63 +60,6 @@ services:
       - "5432:5432"
     networks:
       - DiscordEye
-  
-  proxy_distributor:
-    build:
-      context: .
-      dockerfile: DiscordEye.ProxyDistributor/Dockerfile
-    container_name: DiscordEye.ProxyDistributor
-    environment:
-      - ASPNETCORE_HTTP_PORTS=5000
-      - ASPNETCORE_ENVIRONMENT=Docker
-    networks:
-      - DiscordEye
-    ports:
-      - "5000:5000"
-
-  # ELK Stack
-  elasticsearch:
-    image: elasticsearch:7.10.1
-    container_name: elasticsearch
-    environment:
-      - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
-    ports:
-      - "9200:9200"
-    volumes:
-      - es_data:/usr/share/elasticsearch/data
-    networks:
-      - DiscordEye
-
-  logstash:
-    image: logstash:7.10.1
-    container_name: logstash
-    ports:
-      - "5044:5044"
-    volumes:
-      - logstash_data:/usr/share/logstash/data
-      - /var/logstash/pipeline:/usr/share/logstash/pipeline:rw
-    networks:
-      - DiscordEye
-    depends_on:
-      - elasticsearch
-
-  kibana:
-    image: kibana:7.10.1
-    container_name: kibana
-    ports:
-      - "5601:5601"
-    environment:
-      - ELASTICSEARCH_URL=http://elasticsearch:9200
-    volumes:
-      - kibana_data:/usr/share/kibana/data
-    networks:
-      - DiscordEye
-    depends_on:
-      - elasticsearch
 
 volumes:
   vault_data:
-  es_data:
-  logstash_data:
-  kibana_data:

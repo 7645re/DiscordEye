@@ -47,8 +47,8 @@ public class NodeCommunicateService : INodeCommunicateService, IDisposable
     {
         if (_cachedGrpcChannel.TryGetValue(address, out _))
         {
-            _logger.LogInformation($"Grpc channel has already been created for the address {address}");
-            return false;
+            _cachedGrpcChannel.Remove(address, out _);
+            _logger.LogInformation($"Grpc channel was deleted because it was already created earlier");
         }
 
         var grpcChannel = CreateGrpcChannelInternal($"http://{address}");
