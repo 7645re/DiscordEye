@@ -42,7 +42,7 @@ builder.Services.AddMassTransit(x =>
 });
 builder.Services.AddGrpc();
 builder.Services.AddSingleton<IProxyHolderService, ProxyHolderService>();
-builder.Services.AddSingleton<IDiscordEventClient, DiscordEventClient>();
+builder.Services.AddHostedService<DiscordEventClient>();
 builder.Services.AddSingleton<IDiscordRequestClient, DiscordRequestClient>();
 var app = builder.Build();
 await app.RegisterNodeToSystem();
