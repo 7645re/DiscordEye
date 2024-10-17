@@ -1,9 +1,13 @@
 using System.Threading.Channels;
 using Discord;
+using Discord.Net.Rest;
+using Discord.Net.WebSockets;
 using Discord.WebSocket;
 using DiscordEye.Node.Data;
 using DiscordEye.Node.Helpers;
+using DiscordEye.Node.Mappers;
 using DiscordEye.Node.Options;
+using DiscordEye.Node.Services.ProxyHolder;
 using DiscordEye.Shared.Events;
 using DiscordEye.Shared.Extensions;
 using MassTransit;
@@ -11,23 +15,26 @@ using Microsoft.Extensions.Options;
 
 namespace DiscordEye.Node.DiscordClientWrappers.EventClient;
 
-public class DiscordEventClient : IDiscordEventClient
+public class DiscordEventClient : IHostedService
 {
     private readonly DiscordSocketClient _client;
     private readonly DiscordOptions _options;
     private readonly ILogger<DiscordEventClient> _logger;
     private readonly Channel<StreamStartedRequest> _streamStartedRequestChannel;
     private readonly IServiceProvider _serviceProvider;
+    private readonly IProxyHolderService _proxyHolderService;
     private readonly string _token;
 
     public DiscordEventClient(
         IOptions<DiscordOptions> discordOptions,
         IServiceProvider serviceProvider,
-        ILogger<DiscordEventClient> logger)
+        ILogger<DiscordEventClient> logger,
+        IProxyHolderService proxyHolderService)
     {
         _streamStartedRequestChannel = Channel.CreateUnbounded<StreamStartedRequest>();
         _options = discordOptions.Value;
         _logger = logger;
+        _proxyHolderService = proxyHolderService;
         _serviceProvider = serviceProvider;
         _token = StartupExtensions.GetDiscordTokenFromEnvironment();
         _client = InitClientAsync().GetAwaiter().GetResult();
@@ -40,6 +47,14 @@ public class DiscordEventClient : IDiscordEventClient
             GatewayIntents = GatewayIntents.All
         };
 
+        var webProxy = (await _proxyHolderService.GetCurrentHoldProxy())
+            .ToWebProxy();
+
+        discordSocketConfig.RestClientProvider = DefaultRestClientProvider
+            .Create(true, webProxy);
+        discordSocketConfig.WebSocketProvider = DefaultWebSocketProvider
+            .Create(webProxy);
+        
         var client = new DiscordSocketClient(discordSocketConfig);
         RegisterEventsHandlers();
         await client.LoginAsync(TokenType.User, _token);
@@ -243,4 +258,14 @@ public class DiscordEventClient : IDiscordEventClient
     //         await Task.Delay(7000);
     //     }
     // }
+    public Task StartAsync(CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
+
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        await _client.LogoutAsync();
+        await _client.DisposeAsync();
+    }
 }

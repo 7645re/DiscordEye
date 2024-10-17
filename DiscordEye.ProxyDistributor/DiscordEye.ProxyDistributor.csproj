@@ -16,8 +16,6 @@
         <PackageReference Include="Quartz.Extensions.Hosting" Version="3.13.0" />
         <PackageReference Include="Serilog.AspNetCore" Version="8.0.2" />
         <PackageReference Include="Serilog.Settings.Configuration" Version="8.0.2" />
-        <PackageReference Include="Serilog.Sinks.Elasticsearch" Version="10.0.0" />
-        <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
         <PackageReference Include="VaultSharp" Version="1.13.0.1" />
     </ItemGroup>
 
@@ -59,9 +57,5 @@
     <ItemGroup>
       <ProjectReference Include="..\DiscordEye.Infrastructure\DiscordEye.Infrastructure.csproj" />
       <ProjectReference Include="..\DiscordEye.Shared\DiscordEye.Shared.csproj" />
-    </ItemGroup>
-    
-    <ItemGroup>
-      <_ContentIncludedByDefault Remove="Snapshots\proxiesStates.json" />
     </ItemGroup>
 </Project>

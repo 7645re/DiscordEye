@@ -1,70 +1,30 @@
+using DiscordEye.Infrastructure.Services.Vault;
 using DiscordEye.ProxyDistributor.Dto;
 using DiscordEye.ProxyDistributor.Mappers;
-using VaultSharp.Core;
 using VaultSharp.V1.SecretsEngines.KeyValue.V2;
 
 namespace DiscordEye.ProxyDistributor.Services.Vault;
 
-public class ProxyVaultService : IProxyVaultService
+public class ProxyVaultService : VaultService, IProxyVaultService
 {
-    private const string ProxyPathPrefix = "proxy";
-    private readonly IKeyValueSecretsEngineV2 _engine;
-        
-    public ProxyVaultService(
-        IKeyValueSecretsEngineV2 engine)
+    private const string ProxyPath = "proxy";
+    
+    public ProxyVaultService(IKeyValueSecretsEngineV2 engine, ILogger<VaultService> logger) : base(engine, logger)
     {
-        _engine = engine;
     }
 
-    public async Task<ProxyVault[]> GetAllProxiesAsync()
-    { 
-        var proxies = new List<ProxyVault>();
-        var proxyKeys = await GetProxyKeysAsync();
-        foreach (var path in proxyKeys.Select(key => $"{ProxyPathPrefix}/{key}"))
-        {
-            var proxy = await GetProxyByPathAsync(path, mountPoint: "secret");
-
-            if (proxy != null)
-                proxies.Add(proxy);
-        }
-
-        return proxies.ToArray();
-    }
-
-    private async Task<List<string>> GetProxyKeysAsync()
+    public async Task<List<ProxyVault>> GetProxiesAsync()
     {
-        try
+        var proxiesVault = new List<ProxyVault>();
+        var rows = await GetAllRowsAsync(ProxyPath);
+        foreach (var row in rows)
         {
-            var listResponse = await _engine.ReadSecretPathsAsync(
-                $"{ProxyPathPrefix}/",
-                "secret");
-            var keys = listResponse.Data.Keys;
+            if (row.TryToProxyVault(out var mappedProxyVault))
+            {
+                proxiesVault.Add(mappedProxyVault);
+            }
+        }
 
-            return keys.ToList();
-        }
-        catch (VaultApiException ex)
-        {
-            return [];
-        }
-    }
-
-    private async Task<ProxyVault?> GetProxyByPathAsync(string path, string mountPoint)
-    {
-        try
-        {
-            var secret = await _engine.ReadSecretAsync(path, mountPoint: mountPoint);
-            var secretData = secret.Data.Data;
-            if (secretData is null)
-                return null;
-
-            if (!secretData.TryToProxyVault(out var proxy))
-                return null;
-            
-            return proxy;
-        }
-        catch (VaultApiException ex)
-        {
-            return null;
-        }
+        return proxiesVault;
     }
 }
