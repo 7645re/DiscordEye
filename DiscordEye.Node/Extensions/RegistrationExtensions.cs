@@ -80,7 +80,7 @@ public static class RegistrationExtensions
         {
             var eventsAggregatorGrpcClient = scope.ServiceProvider
                 .GetRequiredService<EventsAggregatorGrpc.EventsAggregatorGrpcClient>();
-            var nodeAddress = $"localhost:{StartupExtensions.GetPort()}";
+            var nodeAddress = $"{IpAddressExtensions.GetLocalIpAddress()}:{StartupExtensions.GetPort()}";
             var registerResult = await eventsAggregatorGrpcClient
                 .RegisterNodeAsync(new RegisterRequest
                 {

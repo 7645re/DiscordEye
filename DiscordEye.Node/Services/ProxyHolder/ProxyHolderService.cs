@@ -9,7 +9,7 @@ public class ProxyHolderService : IProxyHolderService
 {
     private readonly ProxyDistributorGrpc.ProxyDistributorGrpcClient _distributorGrpcServiceClient;
     private Proxy? _holdProxy;
-    private readonly string _address = $"localhost:{StartupExtensions.GetPort()}";
+    private readonly string _address = $"{IpAddressExtensions.GetLocalIpAddress()}:{StartupExtensions.GetPort()}";
     private readonly ILogger<ProxyHolderService> _logger;
     private readonly KeyedLockService _keyedLockService;
 
