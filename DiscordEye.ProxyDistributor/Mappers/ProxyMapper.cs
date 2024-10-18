@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using DiscordEye.ProxyDistributor.Data;
 using DiscordEye.ProxyDistributor.Dto;
 
@@ -5,7 +6,9 @@ namespace DiscordEye.ProxyDistributor.Mappers;
 
 public static class ProxyMapper
 {
-    public static bool TryToProxyVault(this IDictionary<string, object> data, out ProxyVault? proxyVault)
+    public static bool TryToProxyVault(
+        this IDictionary<string, object> data,
+        [NotNullWhen(true)] out ProxyVault? proxyVault)
     {
         if (
             !data.TryGetValue("id", out var id)

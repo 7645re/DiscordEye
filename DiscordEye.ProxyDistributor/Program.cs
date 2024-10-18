@@ -1,4 +1,5 @@
 using DiscordEye.Infrastructure.Extensions;
+using DiscordEye.Infrastructure.Services.Vault;
 using DiscordEye.ProxyDistributor.Extensions;
 using DiscordEye.ProxyDistributor.Services.Heartbeat;
 using DiscordEye.ProxyDistributor.Services.ProxyDistributor;
@@ -13,6 +14,7 @@ builder.Services.AddCoreServices();
 builder.Services.AddGrpc();
 builder.Services.AddSingleton<IProxyHeartbeatSnapShooter, ProxyHeartbeatSnapShooter>();
 builder.Services.AddSingleton<IProxyStateSnapShooter, ProxyStateSnapShooter>();
+builder.Services.AddSingleton<IVaultService, VaultService>();
 builder.Services.AddSingleton<IProxyVaultService, ProxyVaultService>();
 builder.Services.AddSingleton<IProxyDistributorService, ProxyDistributorService>();
 builder.Services.AddSingleton<IProxyHeartbeatService, ProxyHeartbeatService>();

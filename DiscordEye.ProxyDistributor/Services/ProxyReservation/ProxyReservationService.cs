@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using DiscordEye.Infrastructure.Services.Lock;
+using DiscordEye.Infrastructure.Services.Vault;
 using DiscordEye.ProxyDistributor.Data;
 using DiscordEye.ProxyDistributor.Dto;
 using DiscordEye.ProxyDistributor.Mappers;
@@ -45,7 +46,7 @@ public class ProxyReservationService : IProxyReservationService
         ConcurrentDictionary<Guid, ProxyState?> proxiesStates
         )> LoadData()
     {
-        var proxies = (await _proxyVaultService.GetAllProxiesAsync())
+        var proxies = (await _proxyVaultService.GetProxiesAsync())
             .Select(x => x.ToProxy())
             .ToImmutableArray();
         var proxiesStates = await _snapShooter.LoadSnapShotAsync()
