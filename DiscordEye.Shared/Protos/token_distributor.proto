@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option csharp_namespace = "DiscordEye";
+
+service TokenDistributorGrpc {
+  rpc ReserveToken(ReserveTokenRequest) returns(ReserveTokenResponse);
+}
+
+message ReserveTokenRequest {}
+message ReserveTokenResponse {
+  ReservedTokenGrpc reserved_proxy = 1;
+}
+
+message ReservedTokenGrpc {
+  string id = 1;
+  string token = 2;
+  string release_key = 3;
+}

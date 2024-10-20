@@ -10,6 +10,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordEye.Node", "DiscordE
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordEye.Infrastructure", "DiscordEye.Infrastructure\DiscordEye.Infrastructure.csproj", "{3D1E51DF-9C67-46D8-844F-F1951886BC55}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordEye.TokenDistributor", "DiscordEye.TokenDistributor\DiscordEye.TokenDistributor.csproj", "{4161CDFB-687E-4A12-BD3A-CD2860D8734C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +38,9 @@ Global
 		{3D1E51DF-9C67-46D8-844F-F1951886BC55}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3D1E51DF-9C67-46D8-844F-F1951886BC55}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3D1E51DF-9C67-46D8-844F-F1951886BC55}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4161CDFB-687E-4A12-BD3A-CD2860D8734C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4161CDFB-687E-4A12-BD3A-CD2860D8734C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4161CDFB-687E-4A12-BD3A-CD2860D8734C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4161CDFB-687E-4A12-BD3A-CD2860D8734C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
