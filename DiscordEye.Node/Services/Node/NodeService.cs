@@ -1,21 +1,21 @@
-using DiscordEye.Node.DiscordClientWrappers.RequestClient;
 using DiscordEye.Node.Mappers;
+using DiscordEye.Node.Services.DiscordClient;
 using Grpc.Core;
 
 namespace DiscordEye.Node.Services.Node;
 
 public class NodeService : NodeGrpc.NodeGrpcBase
 {
-    private readonly IDiscordRequestClient _discordRequestClient;
+    private readonly IDiscordClientService _discordClientService;
 
-    public NodeService(IDiscordRequestClient discordRequestClient)
+    public NodeService(IDiscordClientService discordClientService)
     {
-        _discordRequestClient = discordRequestClient;
+        _discordClientService = discordClientService;
     }
     
     public override async Task<DiscordUserGrpcResponse> GetUser(DiscordUserGrpcRequest request, ServerCallContext context)
     {
-        var discordUser = await _discordRequestClient.GetUserAsync(request.UserId);
+        var discordUser = await _discordClientService.GetUserAsync(request.UserId);
         
         if (discordUser == null)
             return new DiscordUserGrpcResponse
@@ -33,7 +33,7 @@ public class NodeService : NodeGrpc.NodeGrpcBase
         DiscordGuildGrpcRequest request,
         ServerCallContext context)
     {
-        var discordGuild = await _discordRequestClient.GetGuildAsync(
+        var discordGuild = await _discordClientService.GetGuildAsync(
             request.GuildId,
             request.WithChannels);
         

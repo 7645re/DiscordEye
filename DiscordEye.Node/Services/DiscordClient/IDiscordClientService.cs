@@ -1,8 +1,8 @@
-using DiscordEye.Node.Data;
+﻿using DiscordEye.Node.Data;
 
-namespace DiscordEye.Node.DiscordClientWrappers.RequestClient;
+namespace DiscordEye.Node.Services.DiscordClient;
 
-public interface IDiscordRequestClient
+public interface IDiscordClientService
 {
     Task<DiscordUser?> GetUserAsync(ulong id);
 

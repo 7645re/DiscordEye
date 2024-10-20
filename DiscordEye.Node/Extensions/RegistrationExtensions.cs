@@ -1,4 +1,5 @@
-﻿using DiscordEye.Node.Services.ProxyHolder;
+﻿using DiscordEye.Node.Services.DiscordClient;
+using DiscordEye.Node.Services.ProxyHolder;
 using DiscordEye.Shared.Extensions;
 using Serilog;
 using Serilog.Sinks.Elasticsearch;
@@ -55,6 +56,12 @@ public static class RegistrationExtensions
         }
         
         return builder;
+    }
+
+    public static void ActivateDiscordClientService(this WebApplication app)
+    {
+        using var scope = app.Services.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IDiscordClientService>();
     }
     
     public static async Task RegisterNodeToSystem(this WebApplication app)
