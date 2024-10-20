@@ -1,5 +1,4 @@
 using DiscordEye.EventsAggregator.Dto;
-using DiscordEye.Shared.NodeContracts.Response;
 
 namespace DiscordEye.EventsAggregator.Mappers;
 
