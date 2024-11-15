@@ -5,7 +5,8 @@ which is located in the project root folder. After updating you need to save
 file in your pull request to keep the schema up to date, and also update the
 screenshot in README.md.
 
-![DiscordEye Scheme drawio](https://github.com/user-attachments/assets/a9cf698a-7f13-4ffc-b9eb-94e4391c4b12)
+![image](https://github.com/user-attachments/assets/ffd88172-ec2e-4023-bde5-01aae51ad295)
+
 
 
 # First launch
